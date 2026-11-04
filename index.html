@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Konys Pizza – Reserva tu mesa</title>
   <meta name="description" content="Reserva tu mesa en Konys Pizza, la pizza más icónica de Bucaramanga.">
+  <meta name="theme-color" content="#0F2B3D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
@@ -13,27 +14,246 @@
 <body>
   <!-- Encabezado: logo, navegación y acceso discreto al panel admin -->
   <header class="header">
-    <!-- TODO (fase 3): logo y menú de navegación -->
+    <div class="contenedor header-fila">
+      <a href="#inicio" class="logo" aria-label="Konys Pizza, inicio">
+        <span class="logo-circulo" aria-hidden="true">K</span>
+        <span class="logo-texto">
+          <span class="logo-nombre">KONYS</span>
+          <span class="logo-sub">PIZZA</span>
+        </span>
+      </a>
+
+      <button type="button" class="menu-boton" id="menu-boton" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+
+      <nav id="menu" class="menu" aria-label="Principal">
+        <a href="#inicio">Inicio</a>
+        <a href="#mesas">Mesas</a>
+        <a href="#carta">Carta</a>
+        <a href="#mesas" data-accion="reservar">Reservar</a>
+        <a href="#contacto">Contacto</a>
+        <a href="/admin" class="menu-admin" aria-label="Acceso administrador" title="Administrador">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </a>
+      </nav>
+    </div>
   </header>
 
   <main>
-    <!-- Sección hero: nombre, eslogan y botón "Reserva tu mesa" -->
-    <section id="inicio" class="hero"></section>
+    <!-- Sección hero -->
+    <section id="inicio" class="hero">
+      <div class="contenedor hero-fila">
+        <div class="hero-texto">
+          <span class="etiqueta-hero">CRA. 36 CON CALLE 41 · BUCARAMANGA</span>
+          <h1>La pizza más icónica <span class="resaltado">de la ciudad</span>, con tu mesa lista.</h1>
+          <p>Mira qué mesas están libres, elige fecha y hora, y confirma tu reserva en menos de un minuto. Sin llamadas ni mensajes.</p>
+          <div class="hero-botones">
+            <a href="#mesas" class="btn btn-primario">Reserva tu mesa
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a href="#carta" class="btn btn-contorno">Ver la carta</a>
+          </div>
+          <ul class="hero-horario">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Almuerzo 12:30 – 2:30 p. m.
+            </li>
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+              Noche 5:00 – 11:00 p. m.
+            </li>
+          </ul>
+        </div>
+        <div class="hero-imagen" aria-hidden="true">
+          <svg viewBox="0 0 400 400">
+            <circle cx="200" cy="200" r="190" fill="#16384F"/>
+            <circle cx="200" cy="200" r="160" fill="#E9A54F"/>
+            <circle cx="200" cy="200" r="142" fill="#F6D58E"/>
+            <circle cx="150" cy="140" r="20" fill="#C2410C"/>
+            <circle cx="245" cy="130" r="18" fill="#C2410C"/>
+            <circle cx="270" cy="215" r="20" fill="#C2410C"/>
+            <circle cx="200" cy="265" r="19" fill="#C2410C"/>
+            <circle cx="125" cy="230" r="18" fill="#C2410C"/>
+            <circle cx="205" cy="190" r="16" fill="#C2410C"/>
+            <path d="M170 95q8-10 16 0M290 165q8-10 16 0M150 300q8-10 16 0M235 225q8-10 16 0" stroke="#3F7D3A" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M200 58v284M58 200h284M100 100l200 200M300 100L100 300" stroke="#E9A54F" stroke-width="3"/>
+          </svg>
+        </div>
+      </div>
+    </section>
 
-    <!-- RF-01 / RF-02: tarjetas de mesas (se llenan desde Supabase) -->
-    <section id="mesas" class="mesas"></section>
+    <!-- Cómo reservar (RNF-01: menos de 3 pasos) -->
+    <section class="contenedor pasos-envoltura" aria-label="Cómo reservar">
+      <ol class="pasos">
+        <li><span class="paso-num">1</span><div><strong>Elige tu mesa</strong><span>Salón o terraza, según cuántos son.</span></div></li>
+        <li><span class="paso-num">2</span><div><strong>Escoge fecha y hora</strong><span>Ves al instante qué horarios siguen libres.</span></div></li>
+        <li><span class="paso-num">3</span><div><strong>Confirma y listo</strong><span>Tu nombre, cuántas personas y tu mesa queda apartada.</span></div></li>
+      </ol>
+    </section>
 
-    <!-- RF-07: carta digital por categorías -->
-    <section id="carta" class="carta"></section>
+    <!-- RF-01 / RF-02: tarjetas de mesas -->
+    <section id="mesas" class="seccion contenedor">
+      <div class="seccion-encabezado">
+        <div>
+          <span class="seccion-etiqueta">NUESTRAS MESAS</span>
+          <h2>¿Dónde te quieres sentar?</h2>
+          <p class="texto-suave" id="mesas-subtitulo">Cargando disponibilidad…</p>
+        </div>
+        <div class="filtro" role="group" aria-label="Filtrar por zona">
+          <button type="button" class="filtro-boton activo" data-zona="todas" aria-pressed="true">Todas</button>
+          <button type="button" class="filtro-boton" data-zona="salon" aria-pressed="false">Salón</button>
+          <button type="button" class="filtro-boton" data-zona="terraza" aria-pressed="false">Terraza</button>
+        </div>
+      </div>
+      <div id="lista-mesas" class="grilla-mesas" aria-live="polite"></div>
+    </section>
+
+    <!-- RF-07: carta digital -->
+    <section id="carta" class="seccion contenedor">
+      <span class="seccion-etiqueta">CARTA DIGITAL</span>
+      <h2>Antójate antes de llegar</h2>
+      <div class="pestanas" role="tablist" aria-label="Categorías de la carta" id="pestanas-carta">
+        <button type="button" role="tab" class="pestana activa" data-categoria="pizzas" aria-selected="true">Pizzas</button>
+        <button type="button" role="tab" class="pestana" data-categoria="entradas" aria-selected="false">Entradas</button>
+        <button type="button" role="tab" class="pestana" data-categoria="postres" aria-selected="false">Postres</button>
+        <button type="button" role="tab" class="pestana" data-categoria="bebidas" aria-selected="false">Bebidas</button>
+      </div>
+      <div id="lista-platos" class="grilla-platos" role="tabpanel" aria-live="polite"></div>
+    </section>
   </main>
 
-  <!-- RF-03 a RF-06: modal del flujo de reserva (fecha, hora, datos, confirmación) -->
-  <dialog id="modal-reserva" class="modal"></dialog>
+  <!-- Pie de página -->
+  <footer id="contacto" class="footer">
+    <div class="contenedor footer-grilla">
+      <div>
+        <span class="footer-marca">KONYS <span class="resaltado">PIZZA</span></span>
+        <p>La pizza más icónica de la ciudad. Domicilios y eventos.</p>
+      </div>
+      <div>
+        <h3>Visítanos</h3>
+        <p>Cra. 36 con calle 41<br>Bucaramanga, Santander</p>
+      </div>
+      <div>
+        <h3>Horario</h3>
+        <p>12:30 – 2:30 p. m.<br>5:00 – 11:00 p. m.</p>
+      </div>
+      <div>
+        <h3>Contacto</h3>
+        <p>WhatsApp [TELÉFONO]<br>Instagram [@USUARIO]</p>
+      </div>
+    </div>
+    <div class="contenedor footer-base">© 2026 Konys Pizza · Sistema de reservas</div>
+  </footer>
 
-  <!-- Pie de página: dirección, contacto y redes -->
-  <footer id="contacto" class="footer"></footer>
+  <!-- RF-02 a RF-06: flujo de reserva -->
+  <dialog id="modal-reserva" class="modal" aria-labelledby="modal-titulo">
+    <div class="modal-caja">
+      <!-- Paso de reserva -->
+      <div id="vista-reserva" class="modal-reserva">
+        <aside class="modal-resumen">
+          <span class="seccion-etiqueta oscura">TU MESA</span>
+          <div class="modal-foto" id="modal-foto"></div>
+          <div>
+            <h2 id="modal-titulo">Mesa</h2>
+            <p id="modal-detalle" class="modal-detalle"></p>
+          </div>
+          <dl class="resumen">
+            <div><dt>Fecha</dt><dd id="resumen-fecha">Sin elegir</dd></div>
+            <div><dt>Hora</dt><dd id="resumen-hora">Sin elegir</dd></div>
+            <div><dt>Personas</dt><dd id="resumen-personas">2</dd></div>
+          </dl>
+          <button type="button" class="enlace-boton" data-cerrar>← Cambiar de mesa</button>
+        </aside>
 
-  <!-- Supabase SDK, configuración generada y lógica del cliente -->
+        <form id="form-reserva" class="modal-form" novalidate>
+          <div class="modal-barra">
+            <ol class="indicador" aria-label="Pasos">
+              <li id="ind-fecha" class="hecho">1 · Fecha</li>
+              <li id="ind-hora">2 · Hora</li>
+              <li id="ind-datos">3 · Tus datos</li>
+            </ol>
+            <button type="button" class="boton-icono" data-cerrar aria-label="Cerrar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+
+          <fieldset class="bloque">
+            <legend>¿Qué día vienes?</legend>
+            <div id="lista-dias" class="dias"></div>
+          </fieldset>
+
+          <fieldset class="bloque">
+            <legend>Elige la hora</legend>
+            <div class="leyenda" aria-hidden="true">
+              <span><i class="muestra libre"></i>Libre</span>
+              <span><i class="muestra ocupado"></i>Ocupado</span>
+              <span><i class="muestra elegido"></i>Tu elección</span>
+            </div>
+            <div id="lista-slots" aria-live="polite"></div>
+          </fieldset>
+
+          <fieldset class="bloque">
+            <legend>Tus datos</legend>
+            <div class="campos">
+              <label class="campo">Nombre completo
+                <input type="text" id="campo-nombre" name="nombre" autocomplete="name" maxlength="80" placeholder="Ej: Juan Pérez" required>
+              </label>
+              <div class="campo">
+                <span id="etiqueta-personas">Número de personas</span>
+                <div class="contador" role="group" aria-labelledby="etiqueta-personas">
+                  <button type="button" id="personas-menos" aria-label="Quitar una persona">−</button>
+                  <output id="personas-valor" aria-live="polite">2</output>
+                  <button type="button" id="personas-mas" aria-label="Agregar una persona">+</button>
+                </div>
+              </div>
+              <label class="campo"><span>Teléfono <span class="opcional">(opcional)</span></span>
+                <input type="tel" id="campo-contacto" name="contacto" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="300 000 0000">
+              </label>
+            </div>
+            <p id="aviso-capacidad" class="aviso" hidden></p>
+          </fieldset>
+
+          <p id="error-reserva" class="error" role="alert" hidden></p>
+
+          <div class="modal-pie">
+            <span class="texto-suave">Revisamos de nuevo que el horario siga libre antes de guardar.</span>
+            <button type="submit" class="btn btn-primario" id="boton-confirmar">Confirmar reserva</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- RF-06: confirmación -->
+      <div id="vista-confirmacion" class="confirmacion" hidden>
+        <div class="confirmacion-cabecera">
+          <span class="check" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          </span>
+          <h2 tabindex="-1" id="confirmacion-titulo">¡Tu mesa está reservada!</h2>
+          <p>Muestra este comprobante al llegar a Konys Pizza.</p>
+        </div>
+        <div class="comprobante">
+          <div class="comprobante-cabecera"><span>COMPROBANTE</span><strong id="comp-numero"></strong></div>
+          <dl class="comprobante-datos">
+            <div><dt>Nombre</dt><dd id="comp-nombre"></dd></div>
+            <div><dt>Mesa</dt><dd id="comp-mesa"></dd></div>
+            <div><dt>Fecha</dt><dd id="comp-fecha"></dd></div>
+            <div><dt>Hora</dt><dd id="comp-hora"></dd></div>
+            <div><dt>Personas</dt><dd id="comp-personas"></dd></div>
+            <div><dt>Estado</dt><dd><span class="estado-ok">Confirmada</span></dd></div>
+          </dl>
+        </div>
+        <div class="confirmacion-pie">
+          <p class="texto-suave">Si no puedes llegar, avísanos por WhatsApp para liberar la mesa.</p>
+          <div class="confirmacion-botones">
+            <button type="button" class="btn btn-primario" data-cerrar>Volver al inicio</button>
+            <button type="button" class="btn btn-secundario" data-ir-carta>Ver la carta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
