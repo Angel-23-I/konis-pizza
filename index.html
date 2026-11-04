@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konys Pizza – Reserva tu mesa</title>
+  <meta name="description" content="Reserva tu mesa en Konys Pizza, la pizza más icónica de Bucaramanga.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Encabezado: logo, navegación y acceso discreto al panel admin -->
+  <header class="header">
+    <!-- TODO (fase 3): logo y menú de navegación -->
+  </header>
+
+  <main>
+    <!-- Sección hero: nombre, eslogan y botón "Reserva tu mesa" -->
+    <section id="inicio" class="hero"></section>
+
+    <!-- RF-01 / RF-02: tarjetas de mesas (se llenan desde Supabase) -->
+    <section id="mesas" class="mesas"></section>
+
+    <!-- RF-07: carta digital por categorías -->
+    <section id="carta" class="carta"></section>
+  </main>
+
+  <!-- RF-03 a RF-06: modal del flujo de reserva (fecha, hora, datos, confirmación) -->
+  <dialog id="modal-reserva" class="modal"></dialog>
+
+  <!-- Pie de página: dirección, contacto y redes -->
+  <footer id="contacto" class="footer"></footer>
+
+  <!-- Supabase SDK, configuración generada y lógica del cliente -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/cliente.js"></script>
+</body>
+</html>

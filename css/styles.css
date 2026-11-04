@@ -1,0 +1,94 @@
+/* ==========================================================
+   Konys Pizza – Estilos globales
+   Paleta y tipografía tomadas de la propuesta de diseño.
+   ========================================================== */
+
+:root {
+  /* Colores de marca */
+  --color-primario: #0F2B3D;      /* azul petróleo oscuro */
+  --color-primario-2: #0A1F2C;    /* fondo del footer */
+  --color-acento: #F28C28;        /* naranja del logo (botones) */
+  --color-acento-texto: #B35C0A;  /* naranja legible sobre fondo claro */
+
+  /* Neutros */
+  --color-fondo: #F5F6F7;
+  --color-superficie: #FFFFFF;
+  --color-borde: #E1E6EA;
+  --color-texto: #0F2B3D;
+  --color-texto-suave: #4A5D6B;
+
+  /* Estados de disponibilidad */
+  --color-libre: #1F8A4C;
+  --color-libre-fondo: #E8F5EC;
+  --color-ocupado: #DDE2E6;
+  --color-error: #A3360A;
+
+  /* Tipografía */
+  --fuente-titulos: 'Poppins', system-ui, sans-serif;
+  --fuente-texto: 'Inter', system-ui, sans-serif;
+
+  /* Medidas */
+  --radio: 12px;
+  --radio-grande: 18px;
+  --ancho-max: 1200px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente-texto);
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  line-height: 1.5;
+}
+
+h1, h2, h3 {
+  font-family: var(--fuente-titulos);
+  line-height: 1.15;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Contenedor centrado reutilizable */
+.contenedor {
+  max-width: var(--ancho-max);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Botón principal (naranja) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--radio);
+  font: 600 16px var(--fuente-texto);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primario {
+  background: var(--color-acento);
+  color: var(--color-primario);
+}
+
+.btn-secundario {
+  background: transparent;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+/* TODO (fase 3): estilos de header, hero, tarjetas, modal y carta */
+/* TODO (fase 4): estilos del panel de administración */

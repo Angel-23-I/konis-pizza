@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Konys Pizza – Panel de administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="admin">
+  <!-- RF-08: pantalla de acceso con contraseña -->
+  <section id="login" class="login"></section>
+
+  <!-- Panel (oculto hasta iniciar sesión) -->
+  <div id="panel" class="panel" hidden>
+    <!-- Menú lateral: Mesas, Horarios, Reservas, Carta -->
+    <aside class="sidebar"></aside>
+
+    <main class="panel-contenido">
+      <!-- RF-09, RF-10, RF-13: gestión de mesas -->
+      <section id="seccion-mesas"></section>
+      <!-- RF-11: gestión de horarios -->
+      <section id="seccion-horarios" hidden></section>
+      <!-- RF-12: listado de reservas con filtros -->
+      <section id="seccion-reservas" hidden></section>
+      <!-- RF-14: gestión de la carta -->
+      <section id="seccion-carta" hidden></section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
