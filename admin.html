@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0F2B3D">
   <title>Konys Pizza – Panel de administración</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,25 +12,227 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="admin">
-  <!-- RF-08: pantalla de acceso con contraseña -->
-  <section id="login" class="login"></section>
+  <!-- RF-08: pantalla de acceso -->
+  <section id="login" class="login" hidden>
+    <div class="login-marca">
+      <a href="/" class="logo">
+        <span class="logo-circulo" aria-hidden="true">K</span>
+        <span class="logo-texto"><span class="logo-nombre">KONYS</span><span class="logo-sub">PIZZA</span></span>
+      </a>
+      <div>
+        <h1>Panel de administración</h1>
+        <p>Gestiona mesas, horarios, reservas y la carta desde un solo lugar.</p>
+      </div>
+      <span class="login-nota">Acceso exclusivo para el personal de Konys Pizza</span>
+    </div>
 
-  <!-- Panel (oculto hasta iniciar sesión) -->
+    <div class="login-caja">
+      <form id="form-login" class="login-form" novalidate>
+        <span class="login-icono" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </span>
+        <div>
+          <h2>Ingresar</h2>
+          <p class="texto-suave">Usa tu cuenta de administrador.</p>
+        </div>
+        <label class="campo">Correo
+          <input type="email" id="login-correo" autocomplete="username" required>
+        </label>
+        <label class="campo">Contraseña
+          <input type="password" id="login-clave" autocomplete="current-password" required>
+        </label>
+        <p id="login-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-oscuro" id="login-boton">Entrar al panel</button>
+        <a href="/" class="enlace-volver">← Volver al sitio</a>
+      </form>
+    </div>
+  </section>
+
+  <!-- Panel (visible después de iniciar sesión) -->
   <div id="panel" class="panel" hidden>
-    <!-- Menú lateral: Mesas, Horarios, Reservas, Carta -->
-    <aside class="sidebar"></aside>
+    <aside class="sidebar">
+      <div class="sidebar-marca">
+        <span class="logo-circulo" aria-hidden="true">K</span>
+        <span><strong>KONYS PIZZA</strong><small>Administración</small></span>
+      </div>
+      <nav class="sidebar-nav" aria-label="Secciones del panel">
+        <button type="button" data-seccion="mesas" aria-current="page">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="6" width="16" height="10" rx="2"/><path d="M8 16v4M16 16v4"/></svg>Mesas
+        </button>
+        <button type="button" data-seccion="horarios">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Horarios
+        </button>
+        <button type="button" data-seccion="reservas">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Reservas
+        </button>
+        <button type="button" data-seccion="carta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7c5.5-4 12.5-4 18 0L12 21z"/></svg>Carta
+        </button>
+      </nav>
+      <div class="sidebar-pie">
+        <span id="usuario-correo" class="usuario-correo"></span>
+        <button type="button" id="boton-salir" class="sidebar-salir">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>Cerrar sesión
+        </button>
+      </div>
+    </aside>
 
     <main class="panel-contenido">
-      <!-- RF-09, RF-10, RF-13: gestión de mesas -->
-      <section id="seccion-mesas"></section>
-      <!-- RF-11: gestión de horarios -->
-      <section id="seccion-horarios" hidden></section>
-      <!-- RF-12: listado de reservas con filtros -->
-      <section id="seccion-reservas" hidden></section>
-      <!-- RF-14: gestión de la carta -->
-      <section id="seccion-carta" hidden></section>
+      <!-- RF-09, RF-10, RF-13: mesas -->
+      <section id="seccion-mesas" class="seccion-panel" aria-labelledby="titulo-mesas">
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-mesas">Mesas</h1>
+            <p class="texto-suave" id="resumen-mesas">Las mesas inactivas no aparecen para los clientes.</p>
+          </div>
+          <button type="button" class="btn btn-primario" id="nueva-mesa">+ Nueva mesa</button>
+        </div>
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead><tr><th scope="col">Mesa</th><th scope="col">Zona</th><th scope="col">Capacidad</th><th scope="col">Estado</th><th scope="col" class="derecha">Acciones</th></tr></thead>
+            <tbody id="tabla-mesas"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RF-11: horarios -->
+      <section id="seccion-horarios" class="seccion-panel" aria-labelledby="titulo-horarios" hidden>
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-horarios">Horarios de atención</h1>
+            <p class="texto-suave">Con estos horarios se generan los turnos que ven los clientes.</p>
+          </div>
+          <div class="acciones-encabezado">
+            <label class="campo">Duración de cada reserva
+              <select id="duracion-slot">
+                <option value="30">30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos</option>
+                <option value="90">90 minutos</option>
+                <option value="120">120 minutos</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-primario" id="guardar-horarios">Guardar cambios</button>
+          </div>
+        </div>
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead><tr><th scope="col">Día</th><th scope="col">Almuerzo</th><th scope="col">Noche</th><th scope="col">Turnos por mesa</th></tr></thead>
+            <tbody id="tabla-horarios"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RF-12: reservas -->
+      <section id="seccion-reservas" class="seccion-panel" aria-labelledby="titulo-reservas" hidden>
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-reservas">Reservas</h1>
+            <p class="texto-suave" id="resumen-reservas"></p>
+          </div>
+        </div>
+        <div class="tabla-caja">
+          <form class="filtros" id="filtros-reservas">
+            <label class="campo">Fecha
+              <input type="date" id="filtro-fecha">
+            </label>
+            <label class="campo">Mesa
+              <select id="filtro-mesa"><option value="">Todas las mesas</option></select>
+            </label>
+            <label class="campo">Estado
+              <select id="filtro-estado">
+                <option value="">Todos</option>
+                <option value="confirmada">Confirmada</option>
+                <option value="cancelada">Cancelada</option>
+                <option value="completada">Completada</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-secundario" id="limpiar-filtros">Ver todas</button>
+          </form>
+          <table class="tabla">
+            <thead><tr><th scope="col">Cliente</th><th scope="col">Mesa</th><th scope="col">Fecha</th><th scope="col">Hora</th><th scope="col">Personas</th><th scope="col">Contacto</th><th scope="col">Estado</th></tr></thead>
+            <tbody id="tabla-reservas"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RF-14: carta -->
+      <section id="seccion-carta" class="seccion-panel" aria-labelledby="titulo-carta" hidden>
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-carta">Carta</h1>
+            <p class="texto-suave">Los platos ocultos no se muestran a los clientes.</p>
+          </div>
+          <button type="button" class="btn btn-primario" id="nuevo-plato">+ Nuevo plato</button>
+        </div>
+        <div class="tabla-caja">
+          <table class="tabla">
+            <thead><tr><th scope="col">Plato</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Visible</th><th scope="col" class="derecha">Acciones</th></tr></thead>
+            <tbody id="tabla-platos"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </div>
+
+  <!-- Formulario de mesa (crear / editar) -->
+  <dialog id="dialogo-mesa" class="dialogo" aria-labelledby="dialogo-mesa-titulo">
+    <form id="form-mesa" class="dialogo-form" novalidate>
+      <h2 id="dialogo-mesa-titulo">Nueva mesa</h2>
+      <label class="campo">Nombre o número
+        <input type="text" id="mesa-nombre" maxlength="40" placeholder="Ej: Mesa 9" required>
+      </label>
+      <fieldset class="campo grupo-radio">
+        <legend>Zona</legend>
+        <label><input type="radio" name="mesa-zona" value="salon" checked> Salón</label>
+        <label><input type="radio" name="mesa-zona" value="terraza"> Terraza</label>
+      </fieldset>
+      <label class="campo">Capacidad (personas)
+        <input type="number" id="mesa-capacidad" min="1" max="30" value="4" required>
+      </label>
+      <label class="campo"><span>URL de la foto <span class="opcional">(opcional)</span></span>
+        <input type="url" id="mesa-foto" placeholder="https://…">
+      </label>
+      <p id="mesa-error" class="error" role="alert" hidden></p>
+      <div class="dialogo-botones">
+        <button type="button" class="btn btn-secundario" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn-primario">Guardar mesa</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formulario de plato (crear / editar) -->
+  <dialog id="dialogo-plato" class="dialogo" aria-labelledby="dialogo-plato-titulo">
+    <form id="form-plato" class="dialogo-form" novalidate>
+      <h2 id="dialogo-plato-titulo">Nuevo plato</h2>
+      <label class="campo">Nombre
+        <input type="text" id="plato-nombre" maxlength="80" required>
+      </label>
+      <label class="campo">Categoría
+        <select id="plato-categoria">
+          <option value="pizzas">Pizzas</option>
+          <option value="entradas">Entradas</option>
+          <option value="postres">Postres</option>
+          <option value="bebidas">Bebidas</option>
+        </select>
+      </label>
+      <label class="campo">Descripción
+        <textarea id="plato-descripcion" rows="3" maxlength="200"></textarea>
+      </label>
+      <label class="campo">Precio (COP)
+        <input type="number" id="plato-precio" min="0" step="100" required>
+      </label>
+      <label class="campo-check"><input type="checkbox" id="plato-disponible" checked> Visible en la carta</label>
+      <p id="plato-error" class="error" role="alert" hidden></p>
+      <div class="dialogo-botones">
+        <button type="button" class="btn btn-secundario" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn-primario">Guardar plato</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Mensajes breves de confirmación o error -->
+  <div id="aviso-flotante" class="aviso-flotante" role="status" aria-live="polite" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
