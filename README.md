@@ -48,6 +48,9 @@ konys-reservas-app/
 │   └── config.js           # Generado al compilar (no se sube a GitHub)
 ├── scripts/
 │   └── generar-config.js   # Crea js/config.js desde las variables de entorno
+├── supabase/
+│   ├── schema.sql          # Tablas, funciones y reglas de seguridad (RLS)
+│   └── seed.sql            # Datos de prueba
 ├── docs/
 │   └── mockups/            # Wireframes de baja fidelidad
 ├── .env.example
@@ -63,15 +66,16 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
 
 1. Clona el repositorio:
    ```bash
-   git clone https://github.com/<usuario>/konys-reservas-app.git
-   cd konys-reservas-app
+   git clone https://github.com/Angel-23-I/konis-pizza.git
+   cd konis-pizza
    ```
-2. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
-3. Genera la configuración y abre un servidor local:
+2. En el *SQL Editor* de Supabase ejecuta `supabase/schema.sql` y luego `supabase/seed.sql`.
+3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
+4. Genera la configuración y abre un servidor local:
    ```bash
    npm run dev
    ```
-4. Abre la dirección que aparece en la terminal. El panel está en `/admin`.
+5. Abre la dirección que aparece en la terminal. El panel está en `/admin`.
 
 ## Despliegue en Vercel
 
@@ -80,6 +84,14 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
 3. Cada `git push` a `main` genera un despliegue nuevo. Vercel ejecuta `npm run build`, que crea `js/config.js` con esas variables.
 
 > La clave `anon` de Supabase es pública por diseño: la seguridad real de los datos la dan las reglas de *Row Level Security* (RLS) configuradas en Supabase.
+
+## Seguridad de los datos
+
+- El público solo puede **leer** mesas activas, horarios activos y platos disponibles.
+- Las reservas se crean únicamente con la función `crear_reserva()`, que valida en el servidor la capacidad de la mesa, la fecha, que el horario exista y que el turno esté libre.
+- Una restricción de la base de datos impide que dos reservas confirmadas de la misma mesa se crucen, aunque dos clientes confirmen al mismo tiempo.
+- Los nombres y teléfonos de las reservas solo los ve el administrador.
+- El administrador inicia sesión con Supabase Auth y debe estar registrado en la tabla `administradores`.
 
 ## Créditos
 
