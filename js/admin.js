@@ -31,6 +31,12 @@ const estado = {
 
 const $ = (id) => document.getElementById(id);
 
+// Mismas reglas que las restricciones de la base de datos
+const REGEX_MESA = /^[A-Za-z0-9ÁÉÍÓÚÑáéíóúñ][A-Za-z0-9ÁÉÍÓÚÑáéíóúñ #-]*$/;
+const REGEX_PLATO = /^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ][A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,'&()-]*$/;
+const REGEX_URL_FOTO = /^https:\/\/[^\s"'<>`]+$/;
+const PRECIO_MAXIMO = 1000000;
+
 /* ----------------------------------------------------------
    Utilidades
    ---------------------------------------------------------- */
@@ -79,6 +85,7 @@ function errorAmigable(error, porDefecto) {
   if (error?.code === '23505') return 'Ya existe un registro con ese nombre.';
   if (error?.code === '23503') return 'No se puede borrar porque tiene reservas asociadas. Mejor desactívala.';
   if (error?.code === '42501') return 'Tu sesión no tiene permisos para este cambio.';
+  if (error?.code === '23514') return 'Algún dato no cumple el formato permitido. Revisa los campos.';
   return porDefecto;
 }
 
@@ -248,25 +255,30 @@ function abrirDialogoMesa(mesa = null) {
 async function guardarMesa(evento) {
   evento.preventDefault();
   const datos = {
-    nombre: $('mesa-nombre').value.trim(),
+    nombre: $('mesa-nombre').value.trim().replace(/\s+/g, ' '),
     zona: document.querySelector('input[name="mesa-zona"]:checked').value,
     capacidad: Number($('mesa-capacidad').value),
     foto_url: $('mesa-foto').value.trim() || null
   };
 
   const error = $('mesa-error');
-  if (!datos.nombre) {
-    error.textContent = 'Escribe el nombre o número de la mesa.';
+  if (!datos.nombre || datos.nombre.length > 20 || !REGEX_MESA.test(datos.nombre)) {
+    error.textContent = 'El nombre solo puede tener letras, números, espacios, # y - (máximo 20).';
+    error.hidden = false;
+    return;
+  }
+  if (!['salon', 'terraza'].includes(datos.zona)) {
+    error.textContent = 'Elige una zona válida.';
     error.hidden = false;
     return;
   }
   if (!Number.isInteger(datos.capacidad) || datos.capacidad < 1 || datos.capacidad > 30) {
-    error.textContent = 'La capacidad debe ser un número entre 1 y 30.';
+    error.textContent = 'La capacidad debe ser un número entero entre 1 y 30.';
     error.hidden = false;
     return;
   }
-  if (datos.foto_url && !/^https?:\/\//.test(datos.foto_url)) {
-    error.textContent = 'La URL de la foto debe empezar con http:// o https://';
+  if (datos.foto_url && (datos.foto_url.length > 500 || !REGEX_URL_FOTO.test(datos.foto_url))) {
+    error.textContent = 'La URL de la foto debe empezar por https:// y no tener espacios ni comillas.';
     error.hidden = false;
     return;
   }
@@ -542,6 +554,7 @@ function abrirDialogoPlato(plato = null) {
   $('plato-descripcion').value = plato?.descripcion ?? '';
   $('plato-precio').value = plato?.precio ?? '';
   $('plato-disponible').checked = plato?.disponible ?? true;
+  $('contador-desc').textContent = $('plato-descripcion').value.length;
   $('plato-error').hidden = true;
   $('dialogo-plato').showModal();
   $('plato-nombre').focus();
@@ -550,21 +563,31 @@ function abrirDialogoPlato(plato = null) {
 async function guardarPlato(evento) {
   evento.preventDefault();
   const datos = {
-    nombre: $('plato-nombre').value.trim(),
+    nombre: $('plato-nombre').value.trim().replace(/\s+/g, ' '),
     categoria: $('plato-categoria').value,
-    descripcion: $('plato-descripcion').value.trim() || null,
+    descripcion: $('plato-descripcion').value.trim().replace(/\s+/g, ' ') || null,
     precio: Number($('plato-precio').value),
     disponible: $('plato-disponible').checked
   };
 
   const error = $('plato-error');
-  if (!datos.nombre) {
-    error.textContent = 'Escribe el nombre del plato.';
+  if (datos.nombre.length < 2 || datos.nombre.length > 60 || !REGEX_PLATO.test(datos.nombre)) {
+    error.textContent = 'El nombre debe tener de 2 a 60 caracteres: letras, números y . , \' & ( ) -';
     error.hidden = false;
     return;
   }
-  if ($('plato-precio').value === '' || !Number.isInteger(datos.precio) || datos.precio < 0) {
-    error.textContent = 'El precio debe ser un número entero en pesos, sin puntos.';
+  if (!Object.keys(CATEGORIAS).includes(datos.categoria)) {
+    error.textContent = 'Elige una categoría válida.';
+    error.hidden = false;
+    return;
+  }
+  if (datos.descripcion && (datos.descripcion.length > 200 || /[<>]/.test(datos.descripcion))) {
+    error.textContent = 'La descripción admite máximo 200 caracteres y no puede tener < ni >.';
+    error.hidden = false;
+    return;
+  }
+  if ($('plato-precio').value === '' || !Number.isInteger(datos.precio) || datos.precio < 0 || datos.precio > PRECIO_MAXIMO) {
+    error.textContent = 'El precio debe ser un número entero en pesos, sin puntos, hasta $1.000.000.';
     error.hidden = false;
     return;
   }
@@ -642,6 +665,21 @@ function registrarEventos() {
 
   // Carta
   $('nuevo-plato').addEventListener('click', () => abrirDialogoPlato());
+  $('plato-descripcion').addEventListener('input', () => {
+    $('contador-desc').textContent = $('plato-descripcion').value.length;
+  });
+  // Campos numéricos: solo dígitos (evita "e", "-", "." y pegar texto)
+  ['plato-precio', 'mesa-capacidad'].forEach((id) => {
+    $(id).addEventListener('input', () => {
+      const limpio = $(id).value.replace(/\D/g, '');
+      if ($(id).value !== limpio) $(id).value = limpio;
+    });
+  });
+  $('mesa-nombre').addEventListener('input', () => {
+    const campo = $('mesa-nombre');
+    const limpio = campo.value.replace(/[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ #-]/g, '').slice(0, 20);
+    if (campo.value !== limpio) campo.value = limpio;
+  });
   $('form-plato').addEventListener('submit', guardarPlato);
   $('tabla-platos').addEventListener('click', (e) => {
     const boton = e.target.closest('[data-accion]');

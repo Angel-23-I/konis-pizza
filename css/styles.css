@@ -1071,6 +1071,17 @@ body:has(.modal[open]) {
   color: var(--color-texto-suave);
 }
 
+.ayuda {
+  margin-top: -2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-texto-suave);
+}
+
+.campo input[aria-invalid="true"] + .ayuda {
+  color: var(--color-error);
+}
+
 .contador {
   height: 48px;
   display: flex;

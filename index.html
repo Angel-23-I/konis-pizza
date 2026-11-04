@@ -197,7 +197,10 @@
             <legend>Tus datos</legend>
             <div class="campos">
               <label class="campo">Nombre completo
-                <input type="text" id="campo-nombre" name="nombre" autocomplete="name" maxlength="80" placeholder="Ej: Juan Pérez" required>
+                <input type="text" id="campo-nombre" name="nombre" autocomplete="name" minlength="2" maxlength="50"
+                       pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'\-]*" spellcheck="false"
+                       placeholder="Ej: Juan Pérez" aria-describedby="ayuda-nombre" required>
+                <small id="ayuda-nombre" class="ayuda">Solo letras y espacios, máximo 50.</small>
               </label>
               <div class="campo">
                 <span id="etiqueta-personas">Número de personas</span>
@@ -208,7 +211,9 @@
                 </div>
               </div>
               <label class="campo"><span>Teléfono <span class="opcional">(opcional)</span></span>
-                <input type="tel" id="campo-contacto" name="contacto" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="300 000 0000">
+                <input type="tel" id="campo-contacto" name="contacto" autocomplete="tel-national" inputmode="numeric"
+                       maxlength="10" pattern="3[0-9]{9}" placeholder="3001234567" aria-describedby="ayuda-contacto">
+                <small id="ayuda-contacto" class="ayuda">Celular de 10 dígitos que empiece por 3.</small>
               </label>
             </div>
             <p id="aviso-capacidad" class="aviso" hidden></p>
@@ -254,7 +259,8 @@
     </div>
   </dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+          integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/cliente.js"></script>

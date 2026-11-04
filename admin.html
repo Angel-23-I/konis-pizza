@@ -36,10 +36,10 @@
           <p class="texto-suave">Usa tu cuenta de administrador.</p>
         </div>
         <label class="campo">Correo
-          <input type="email" id="login-correo" autocomplete="username" required>
+          <input type="email" id="login-correo" autocomplete="username" maxlength="254" spellcheck="false" required>
         </label>
         <label class="campo">Contraseña
-          <input type="password" id="login-clave" autocomplete="current-password" required>
+          <input type="password" id="login-clave" autocomplete="current-password" maxlength="72" required>
         </label>
         <p id="login-error" class="error" role="alert" hidden></p>
         <button type="submit" class="btn btn-oscuro" id="login-boton">Entrar al panel</button>
@@ -180,7 +180,8 @@
     <form id="form-mesa" class="dialogo-form" novalidate>
       <h2 id="dialogo-mesa-titulo">Nueva mesa</h2>
       <label class="campo">Nombre o número
-        <input type="text" id="mesa-nombre" maxlength="40" placeholder="Ej: Mesa 9" required>
+        <input type="text" id="mesa-nombre" maxlength="20" pattern="[A-Za-z0-9ÁÉÍÓÚÑáéíóúñ][A-Za-z0-9ÁÉÍÓÚÑáéíóúñ #\-]*" placeholder="Ej: Mesa 9" aria-describedby="ayuda-mesa-nombre" required>
+        <small id="ayuda-mesa-nombre" class="ayuda">Letras, números, espacios, # y -. Máximo 20.</small>
       </label>
       <fieldset class="campo grupo-radio">
         <legend>Zona</legend>
@@ -188,10 +189,11 @@
         <label><input type="radio" name="mesa-zona" value="terraza"> Terraza</label>
       </fieldset>
       <label class="campo">Capacidad (personas)
-        <input type="number" id="mesa-capacidad" min="1" max="30" value="4" required>
+        <input type="number" id="mesa-capacidad" min="1" max="30" step="1" inputmode="numeric" value="4" required>
       </label>
       <label class="campo"><span>URL de la foto <span class="opcional">(opcional)</span></span>
-        <input type="url" id="mesa-foto" placeholder="https://…">
+        <input type="url" id="mesa-foto" maxlength="500" pattern="https://.+" placeholder="https://…" aria-describedby="ayuda-mesa-foto">
+        <small id="ayuda-mesa-foto" class="ayuda">Solo enlaces seguros que empiecen por https://</small>
       </label>
       <p id="mesa-error" class="error" role="alert" hidden></p>
       <div class="dialogo-botones">
@@ -206,7 +208,8 @@
     <form id="form-plato" class="dialogo-form" novalidate>
       <h2 id="dialogo-plato-titulo">Nuevo plato</h2>
       <label class="campo">Nombre
-        <input type="text" id="plato-nombre" maxlength="80" required>
+        <input type="text" id="plato-nombre" minlength="2" maxlength="60" aria-describedby="ayuda-plato-nombre" required>
+        <small id="ayuda-plato-nombre" class="ayuda">De 2 a 60 caracteres.</small>
       </label>
       <label class="campo">Categoría
         <select id="plato-categoria">
@@ -217,10 +220,12 @@
         </select>
       </label>
       <label class="campo">Descripción
-        <textarea id="plato-descripcion" rows="3" maxlength="200"></textarea>
+        <textarea id="plato-descripcion" rows="3" maxlength="200" aria-describedby="ayuda-plato-desc"></textarea>
+        <small id="ayuda-plato-desc" class="ayuda"><span id="contador-desc">0</span>/200 caracteres.</small>
       </label>
       <label class="campo">Precio (COP)
-        <input type="number" id="plato-precio" min="0" step="100" required>
+        <input type="number" id="plato-precio" min="0" max="1000000" step="100" inputmode="numeric" aria-describedby="ayuda-plato-precio" required>
+        <small id="ayuda-plato-precio" class="ayuda">En pesos, sin puntos. Máximo $1.000.000.</small>
       </label>
       <label class="campo-check"><input type="checkbox" id="plato-disponible" checked> Visible en la carta</label>
       <p id="plato-error" class="error" role="alert" hidden></p>
@@ -234,7 +239,8 @@
   <!-- Mensajes breves de confirmación o error -->
   <div id="aviso-flotante" class="aviso-flotante" role="status" aria-live="polite" hidden></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+          integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/admin.js"></script>

@@ -95,6 +95,31 @@ function formatoPrecio(valor) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
 }
 
+/* ----------------------------------------------------------
+   Validación de campos (la base de datos aplica las mismas reglas)
+   ---------------------------------------------------------- */
+
+const REGEX_NOMBRE = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'-]*$/;
+const REGEX_CELULAR = /^3\d{9}$/;
+const MAX_NOMBRE = 50;
+
+// Quita al escribir lo que no puede ir en un nombre: números, símbolos y espacios dobles
+function limpiarNombre(valor) {
+  return valor
+    .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'-]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[ .'-]+/, '')
+    .slice(0, MAX_NOMBRE);
+}
+
+// El celular solo admite dígitos, máximo 10. Si se pega con el
+// indicativo de Colombia (+57 300…), se quita el 57.
+function limpiarCelular(valor) {
+  let digitos = valor.replace(/\D/g, '');
+  if (digitos.length > 10 && digitos.startsWith('57')) digitos = digitos.slice(2);
+  return digitos.slice(0, 10);
+}
+
 // Evita inyectar HTML con los datos que vienen de la base de datos
 function escapar(texto) {
   return String(texto ?? '').replace(/[&<>"']/g, (c) => ({
@@ -309,6 +334,7 @@ function abrirReserva(mesaId) {
   $('form-reserva').reset();
   limpiarError();
   $('campo-nombre').removeAttribute('aria-invalid');
+  $('campo-contacto').removeAttribute('aria-invalid');
 
   $('vista-reserva').hidden = false;
   $('vista-confirmacion').hidden = true;
@@ -430,22 +456,23 @@ function limpiarError() {
 async function confirmarReserva(evento) {
   evento.preventDefault();
   const r = estado.reserva;
-  const nombre = $('campo-nombre').value.trim();
-  const contacto = $('campo-contacto').value.trim();
+  const nombre = limpiarNombre($('campo-nombre').value).trim();
+  const contacto = limpiarCelular($('campo-contacto').value);
 
   if (!r.fecha || !r.slot) {
     mostrarError('Elige un día y una hora disponibles.');
     return;
   }
-  if (nombre.length < 2) {
+  if (nombre.length < 2 || !REGEX_NOMBRE.test(nombre)) {
     $('campo-nombre').setAttribute('aria-invalid', 'true');
     $('campo-nombre').focus();
-    mostrarError('Escribe tu nombre para la reserva.');
+    mostrarError('Escribe tu nombre para la reserva (solo letras, mínimo 2).');
     return;
   }
-  if (contacto && !/^[+\d\s()-]{7,30}$/.test(contacto)) {
+  if (contacto && !REGEX_CELULAR.test(contacto)) {
+    $('campo-contacto').setAttribute('aria-invalid', 'true');
     $('campo-contacto').focus();
-    mostrarError('El teléfono solo puede tener números, espacios y el signo +.');
+    mostrarError('El teléfono debe tener 10 dígitos y empezar por 3.');
     return;
   }
 
@@ -586,8 +613,17 @@ function registrarEventos() {
   $('personas-menos').addEventListener('click', () => cambiarPersonas(-1));
   $('personas-mas').addEventListener('click', () => cambiarPersonas(1));
   $('campo-nombre').addEventListener('input', () => {
-    $('campo-nombre').removeAttribute('aria-invalid');
+    const campo = $('campo-nombre');
+    const limpio = limpiarNombre(campo.value);
+    if (campo.value !== limpio) campo.value = limpio;
+    campo.removeAttribute('aria-invalid');
     actualizarResumen();
+  });
+  $('campo-contacto').addEventListener('input', () => {
+    const campo = $('campo-contacto');
+    const limpio = limpiarCelular(campo.value);
+    if (campo.value !== limpio) campo.value = limpio;
+    campo.removeAttribute('aria-invalid');
   });
   $('form-reserva').addEventListener('submit', confirmarReserva);
 

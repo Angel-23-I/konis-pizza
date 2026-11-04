@@ -44,12 +44,12 @@ konys-reservas-app/
 ├── js/
 │   ├── supabase.js         # Conexión con Supabase
 │   ├── cliente.js          # Lógica del módulo cliente
-│   ├── admin.js            # Lógica del módulo administrador
-│   └── config.js           # Generado al compilar (no se sube a GitHub)
+│   └── admin.js            # Lógica del módulo administrador
 ├── scripts/
-│   └── generar-config.js   # Crea js/config.js desde las variables de entorno
+│   └── generar-config.js   # Build: copia el sitio a dist/ y crea dist/js/config.js
 ├── supabase/
 │   ├── schema.sql          # Tablas, funciones y reglas de seguridad (RLS)
+│   ├── validaciones.sql    # Formatos permitidos y límites anti-abuso
 │   └── seed.sql            # Datos de prueba
 ├── docs/
 │   └── mockups/            # Wireframes de baja fidelidad
@@ -69,7 +69,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    git clone https://github.com/Angel-23-I/konis-pizza.git
    cd konis-pizza
    ```
-2. En el *SQL Editor* de Supabase ejecuta `supabase/schema.sql` y luego `supabase/seed.sql`.
+2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql` y `supabase/seed.sql`.
 3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
 4. Genera la configuración y abre un servidor local:
    ```bash
@@ -77,11 +77,13 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    ```
 5. Abre la dirección que aparece en la terminal. El panel está en `/admin`.
 
+> El servidor local sirve la carpeta `dist/`. Si cambias el código, vuelve a ejecutar `npm run build` (o `npm run dev`).
+
 ## Despliegue en Vercel
 
 1. Importa el repositorio de GitHub en Vercel.
 2. En *Settings → Environment Variables* agrega `SUPABASE_URL` y `SUPABASE_ANON_KEY`.
-3. Cada `git push` a `main` genera un despliegue nuevo. Vercel ejecuta `npm run build`, que crea `js/config.js` con esas variables.
+3. Cada `git push` a `main` genera un despliegue nuevo. Vercel ejecuta `npm run build`, que copia a `dist/` solo los archivos públicos (HTML, CSS y JS) y crea `dist/js/config.js` con esas variables.
 
 > La clave `anon` de Supabase es pública por diseño: la seguridad real de los datos la dan las reglas de *Row Level Security* (RLS) configuradas en Supabase.
 
@@ -92,6 +94,32 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
 - Una restricción de la base de datos impide que dos reservas confirmadas de la misma mesa se crucen, aunque dos clientes confirmen al mismo tiempo.
 - Los nombres y teléfonos de las reservas solo los ve el administrador.
 - El administrador inicia sesión con Supabase Auth y debe estar registrado en la tabla `administradores`.
+
+## Validación de campos
+
+Los formularios filtran lo que se escribe y la base de datos vuelve a validar todo, así que las reglas no se pueden saltar llamando a la API directamente.
+
+| Campo | Regla |
+|---|---|
+| Nombre del cliente | Solo letras, espacios, `.`, `'` y `-`; de 2 a 50 caracteres |
+| Teléfono | Opcional; celular de 10 dígitos que empieza por 3 (se quita el `+57` si se pega) |
+| Personas | De 1 hasta la capacidad de la mesa |
+| Fecha | Desde ahora hasta 30 días de anticipación |
+| Nombre de mesa | Letras, números, espacios, `#` y `-`; máximo 20 |
+| Capacidad de mesa | Entero de 1 a 30 |
+| Foto de mesa | Opcional; solo enlaces `https://`, máximo 500 caracteres |
+| Nombre de plato | De 2 a 60 caracteres; letras, números y `. , ' & ( ) -` |
+| Descripción de plato | Máximo 200 caracteres, sin `<` ni `>` |
+| Precio | Entero en pesos, de 0 a 1.000.000 |
+
+Límites anti-abuso: máximo 3 reservas activas por teléfono y 2 por nombre en el mismo día.
+
+## Seguridad del sitio
+
+- Encabezados HTTP en `vercel.json`: *Content-Security-Policy* estricta (sin scripts en línea), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS.
+- El script de Supabase se carga con *Subresource Integrity* (`integrity`): si el CDN lo altera, el navegador no lo ejecuta.
+- Todo dato que viene de la base se escapa antes de mostrarse, para evitar inyección de HTML.
+- Solo se publica la carpeta `dist/`: `package.json`, `supabase/`, `scripts/` y `.env` nunca quedan accesibles.
 
 ## Créditos
 

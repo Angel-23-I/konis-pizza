@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 js/config.js
+dist/
 
 # Dependencias y builds
 node_modules/
