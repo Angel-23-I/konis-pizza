@@ -280,10 +280,63 @@ function renderErrorCarga() {
    RF-07: carta digital
    ---------------------------------------------------------- */
 
-const ICONO_PLATO = `
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 7c5.5-4 12.5-4 18 0L12 21z"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="11" cy="14.5" r="1"/>
-  </svg>`;
+// Trazos de los íconos de la carta (viewBox 24×24, línea con currentColor)
+const TRAZOS_PLATO = {
+  cono: '<path d="M6 9h12l-6 12z"/><path d="M5 9a7 5 0 0 1 14 0"/><circle cx="10" cy="7" r="0.9" fill="currentColor"/><circle cx="14" cy="6.5" r="0.9" fill="currentColor"/><path d="M9.5 13h5M10.7 16.5h2.6"/>',
+  trofeo: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+  combo: '<path d="M3 10h8l-4 10zM13 10h8l-4 10z"/><path d="M3 10a4 3 0 0 1 8 0M13 10a4 3 0 0 1 8 0"/>',
+  camaron: '<path d="M18 6c-6-2-13 1-13 7 0 3 2 5 5 5h2"/><path d="M12 18l-2 3M12 18l2 3"/><path d="M18 6c1 3-1 6-4 7M9 10l1 2M12 9l1 2"/><circle cx="16" cy="7.5" r="0.8" fill="currentColor"/>',
+  pollo: '<path d="M15.5 4.5a5 5 0 0 1 3 8.5c-2 2-4.5 2-6.5 1L9 17.5"/><path d="M15.5 4.5a5 5 0 0 0-5 6c.3 1.3.9 2.3 1.5 3.5"/><path d="M9 17.5a2 2 0 1 1-3 2.5 2 2 0 1 1-1-3 2 2 0 1 1 4 .5z"/>',
+  hoja: '<path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15"/><path d="M5 19l8-8"/>',
+  chile: '<path d="M6 18c6 1 12-4 12-10"/><path d="M18 8c-3 0-5 2-6 5s-3 5-6 5"/><path d="M18 8c0-2 1-3 3-3"/>',
+  pina: '<ellipse cx="12" cy="15" rx="5" ry="6"/><path d="M9 12l6 6M15 12l-6 6"/><path d="M12 9V4M12 9 9 5M12 9l3-4"/>',
+  maiz: '<path d="M12 3c3 0 4 4 4 8s-1 9-4 10c-3-1-4-6-4-10s1-8 4-8z"/><path d="M8 13c-3 0-5 3-5 7 3 0 6-1 8-3M16 13c3 0 5 3 5 7-3 0-6-1-8-3"/>',
+  papas: '<path d="M6 10h12l-1.5 10h-9z"/><path d="M7.5 10V6M9.5 10V3.5M12 10V4.5M14.5 10V3M16.5 10V6"/>',
+  nachos: '<path d="M4 18 12 4l8 14z"/><circle cx="10" cy="13" r="1" fill="currentColor"/><circle cx="14" cy="14" r="1" fill="currentColor"/><circle cx="12" cy="10" r="0.8" fill="currentColor"/>',
+  lasana: '<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 13h18M3 16.5h18"/><path d="M8 7c0-1.5 1.5-1.5 1.5-3M14 7c0-1.5 1.5-1.5 1.5-3"/>',
+  konitos: '<path d="M3 9h5l-2.5 9zM9.5 9h5L12 18zM16 9h5l-2.5 9z"/><path d="M3 9a2.5 2 0 0 1 5 0M9.5 9a2.5 2 0 0 1 5 0M16 9a2.5 2 0 0 1 5 0"/>',
+  helado: '<path d="M5 12h14l-2 8H7z"/><path d="M7 12a5 5 0 0 1 10 0"/><path d="M12 7c0-2 1-3 2-4"/>',
+  granizado: '<path d="M6 8h12l-1.5 13h-9z"/><path d="M5.5 8a6.5 4 0 0 1 13 0"/><path d="M13 5l3-3"/>',
+  soda: '<path d="M6 4h12l-1.5 17h-9z"/><circle cx="10" cy="15" r="1"/><circle cx="13.5" cy="11" r="1.2"/><circle cx="11" cy="8" r="0.8"/>',
+  limon: '<circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16M6.3 6.3l11.4 11.4M17.7 6.3 6.3 17.7"/>',
+  botella: '<path d="M10 2h4v4l2 3v12a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9l2-3z"/><path d="M8 13h8"/>',
+  jugo: '<path d="M7 7h10v14H7z"/><path d="M7 7l2-3h6l2 3M14 4V1"/><path d="M10 12h4"/>',
+  agua: '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/>'
+};
+
+// Se usa la primera regla cuyo patrón aparezca en el nombre (sin tildes).
+// El orden importa: "Chicken fries" debe dar papas y no pollo.
+const REGLAS_ICONO = [
+  [/pizza master|bukara/, 'trofeo'],
+  [/combo/, 'combo'],
+  [/desgranado/, 'maiz'],
+  [/papas|fries/, 'papas'],
+  [/konitos/, 'konitos'],
+  [/nachos/, 'nachos'],
+  [/lasan|lasagna/, 'lasana'],
+  [/helado|copa/, 'helado'],
+  [/soda/, 'soda'],
+  [/granizado|cerezada|pina colada|limonada de coco/, 'granizado'],
+  [/limonada/, 'limon'],
+  [/gaseosa|coca/, 'botella'],
+  [/jugo/, 'jugo'],
+  [/agua/, 'agua'],
+  [/\bmar\b|marinera|camaron/, 'camaron'],
+  [/hawaian/, 'pina'],
+  [/mexican/, 'chile'],
+  [/veggie/, 'hoja'],
+  [/chicken|pollo|bbq|ikonica/, 'pollo']
+];
+
+const ICONO_POR_CATEGORIA = { pizzas: 'cono', entradas: 'konitos', postres: 'helado', bebidas: 'granizado' };
+
+function iconoPlato(plato) {
+  const nombre = plato.nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const regla = REGLAS_ICONO.find(([patron]) => patron.test(nombre));
+  const clave = regla ? regla[1] : (ICONO_POR_CATEGORIA[plato.categoria] ?? 'cono');
+  return `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TRAZOS_PLATO[clave]}</svg>`;
+}
 
 function renderCarta() {
   const platos = estado.platos.filter((p) => p.categoria === estado.categoria);
@@ -291,12 +344,13 @@ function renderCarta() {
     ? '<p class="estado-vacio">Pronto tendremos platos en esta categoría.</p>'
     : platos.map((p) => `
         <article class="plato">
-          <span class="plato-icono">${ICONO_PLATO}</span>
+          <span class="plato-icono ${p.categoria}">${iconoPlato(p)}</span>
           <div class="plato-info">
             <div class="plato-fila">
               <h3 class="plato-nombre">${escapar(p.nombre)}</h3>
               <span class="plato-precio">${formatoPrecio(p.precio)}</span>
             </div>
+            ${/pizza master/i.test(p.nombre) ? '<span class="plato-insignia">Ganadora Pizza Master</span>' : ''}
             ${p.descripcion ? `<p class="plato-desc">${escapar(p.descripcion)}</p>` : ''}
           </div>
         </article>`).join('');
