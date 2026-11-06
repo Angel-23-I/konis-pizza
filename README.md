@@ -40,6 +40,7 @@ konys-reservas-app/
 ├── index.html              # Página principal (cliente)
 ├── admin.html              # Panel de administración
 ├── 404.html                # Página de error para rutas que no existen
+├── imgs/                   # Logo y fotos reales del restaurante
 ├── css/
 │   └── styles.css
 ├── js/
@@ -51,7 +52,8 @@ konys-reservas-app/
 ├── supabase/
 │   ├── schema.sql          # Tablas, funciones y reglas de seguridad (RLS)
 │   ├── validaciones.sql    # Formatos permitidos y límites anti-abuso
-│   └── seed.sql            # Datos de prueba
+│   ├── seed.sql            # Mesas, horarios y reservas de prueba
+│   └── carta.sql           # Carta real de Konys (45 platos)
 ├── docs/
 │   └── mockups/            # Wireframes de baja fidelidad
 ├── .env.example
@@ -70,7 +72,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    git clone https://github.com/Angel-23-I/konis-pizza.git
    cd konis-pizza
    ```
-2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql` y `supabase/seed.sql`.
+2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
 3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
 4. Genera la configuración y abre un servidor local:
    ```bash

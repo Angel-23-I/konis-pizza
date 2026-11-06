@@ -186,7 +186,7 @@ async function cargarDatos() {
   const [mesas, horarios, platos, ocupados] = await Promise.all([
     db.from('mesas').select('id, nombre, zona, capacidad, foto_url').order('id'),
     db.from('horarios').select('dia_semana, jornada, hora_inicio, hora_fin, duracion_slot'),
-    db.from('platos').select('id, nombre, categoria, descripcion, precio').order('nombre'),
+    db.from('platos').select('id, nombre, categoria, descripcion, precio').order('id'),
     cargarOcupados(hoy).then((data) => ({ data }), (error) => ({ error }))
   ]);
 

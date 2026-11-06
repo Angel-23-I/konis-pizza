@@ -13,7 +13,7 @@ const NOMBRE_DIA = {
   viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
 };
 const ZONAS = { salon: 'Salón', terraza: 'Terraza' };
-const CATEGORIAS = { pizzas: 'Pizzas', entradas: 'Entradas', postres: 'Postres', bebidas: 'Bebidas' };
+const CATEGORIAS = { pizzas: 'Konys pizza', entradas: 'Entradas y papas', postres: 'Postres', bebidas: 'Bebidas' };
 const ESTADOS = { confirmada: 'Confirmada', cancelada: 'Cancelada', completada: 'Completada' };
 const HORARIO_BASE = {
   almuerzo: { hora_inicio: '12:30', hora_fin: '14:30' },

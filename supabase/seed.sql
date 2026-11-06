@@ -1,7 +1,7 @@
 -- ==========================================================
 -- Konys Pizza – Datos de prueba
--- Mesas y horarios de ejemplo, platos con precios PROVISIONALES
--- (reemplazar por la carta real) y reservas en los próximos días.
+-- Mesas y horarios de ejemplo y reservas en los próximos días.
+-- La carta real se carga con supabase/carta.sql.
 -- ==========================================================
 
 insert into public.mesas (nombre, zona, capacidad) values
@@ -23,16 +23,7 @@ cross join (values
   ('noche',    time '17:00', time '23:00')
 ) as j(jornada, inicio, fin);
 
-insert into public.platos (nombre, categoria, descripcion, precio) values
-  ('Pizza Konys Especial', 'pizzas',   'La receta de la casa.', 42000),
-  ('Pizza Pepperoni',      'pizzas',   'Salsa de tomate, mozzarella y pepperoni.', 36000),
-  ('Pizza Hawaiana',       'pizzas',   'Jamón, piña y mozzarella.', 36000),
-  ('Pizza Vegetariana',    'pizzas',   'Champiñones, pimentón, cebolla y aceitunas.', 34000),
-  ('Pan de ajo',           'entradas', 'Con mantequilla de ajo y perejil.', 12000),
-  ('Palitos de queso',     'entradas', 'Masa horneada con mozzarella gratinada.', 15000),
-  ('Brownie con helado',   'postres',  'Brownie tibio con una bola de vainilla.', 14000),
-  ('Limonada natural',     'bebidas',  'Vaso de 16 oz.', 8000),
-  ('Gaseosa',              'bebidas',  'Personal, varios sabores.', 5000);
+-- Los platos de la carta real están en supabase/carta.sql
 
 -- Reservas de ejemplo para mañana y pasado mañana (hora de Colombia)
 insert into public.reservas (mesa_id, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin)
