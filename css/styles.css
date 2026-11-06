@@ -2046,3 +2046,445 @@ select.estado-completada {
     font-size: 30px;
   }
 }
+
+/* ---------- Botón "Volver al inicio" del login ---------- */
+
+.login-caja {
+  position: relative;
+  padding-top: 88px;
+}
+
+.login-inicio {
+  position: absolute;
+  top: 24px;
+  left: 16px;
+}
+
+.login-form .btn-secundario {
+  min-height: 48px;
+}
+
+@media (min-width: 900px) {
+  .login-inicio {
+    left: 32px;
+  }
+}
+
+/* ==========================================================
+   Página 404
+   ========================================================== */
+
+.error-404 {
+  min-height: calc(100vh - 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 40px;
+  padding-bottom: 56px;
+  text-align: center;
+}
+
+.error-404-imagen svg {
+  width: min(60vw, 220px);
+  height: auto;
+}
+
+.error-404-codigo {
+  font: 700 clamp(64px, 14vw, 110px) / 1 var(--fuente-titulos);
+  color: var(--color-acento-texto);
+  letter-spacing: 0.04em;
+}
+
+.error-404 h1 {
+  font-size: clamp(24px, 5vw, 36px);
+}
+
+.error-404 .texto-suave {
+  max-width: 440px;
+}
+
+.error-404-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* ==========================================================
+   Transiciones y animaciones
+   Todas duran menos de medio segundo y se desactivan si el
+   sistema pide reducir el movimiento (al final del archivo).
+   ========================================================== */
+
+:root {
+  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --rapida: 160ms;
+  --media: 280ms;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes aparecer-suave {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes subir-aviso {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes pulso {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sacudir {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes check-entrada {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes trazar {
+  from { stroke-dashoffset: 30; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes girar-lento {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes flotar {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+
+/* Cambio suave entre páginas (inicio, admin, 404) en navegadores compatibles */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 180ms var(--curva) both aparecer-suave reverse;
+}
+
+::view-transition-new(root) {
+  animation: 260ms var(--curva) both aparecer-suave;
+}
+
+/* Entrada de cada página */
+.hero-texto > *,
+.login-form > *,
+.login-marca > *,
+.error-404 > * {
+  animation: aparecer 500ms var(--curva) backwards;
+}
+
+.hero-texto > :nth-child(2), .login-form > :nth-child(2), .login-marca > :nth-child(2), .error-404 > :nth-child(2) { animation-delay: 60ms; }
+.hero-texto > :nth-child(3), .login-form > :nth-child(3), .login-marca > :nth-child(3), .error-404 > :nth-child(3) { animation-delay: 120ms; }
+.hero-texto > :nth-child(4), .login-form > :nth-child(4), .error-404 > :nth-child(4) { animation-delay: 180ms; }
+.hero-texto > :nth-child(5), .login-form > :nth-child(5), .error-404 > :nth-child(5) { animation-delay: 240ms; }
+.login-form > :nth-child(n + 6) { animation-delay: 300ms; }
+
+.login-inicio {
+  animation: aparecer-suave 400ms 200ms var(--curva) backwards;
+}
+
+.hero-imagen {
+  animation: aparecer-suave 700ms 150ms var(--curva) backwards;
+}
+
+.hero-imagen svg {
+  animation: girar-lento 90s linear infinite;
+}
+
+.pasos {
+  animation: aparecer 600ms 250ms var(--curva) backwards;
+}
+
+.error-404-imagen svg {
+  animation: flotar 4s ease-in-out infinite;
+}
+
+/* Tarjetas de mesas y platos: aparecen en cascada al cargar o filtrar */
+.mesa,
+.plato {
+  animation: aparecer 420ms var(--curva) backwards;
+}
+
+.mesa:nth-child(2), .plato:nth-child(2) { animation-delay: 40ms; }
+.mesa:nth-child(3), .plato:nth-child(3) { animation-delay: 80ms; }
+.mesa:nth-child(4), .plato:nth-child(4) { animation-delay: 120ms; }
+.mesa:nth-child(5), .plato:nth-child(5) { animation-delay: 160ms; }
+.mesa:nth-child(6), .plato:nth-child(6) { animation-delay: 200ms; }
+.mesa:nth-child(7), .plato:nth-child(7) { animation-delay: 240ms; }
+.mesa:nth-child(n + 8), .plato:nth-child(n + 8) { animation-delay: 280ms; }
+
+.mesa {
+  transition: transform var(--media) var(--curva), box-shadow var(--media) var(--curva), border-color var(--media);
+}
+
+.mesa:hover {
+  border-color: var(--color-borde-fuerte);
+}
+
+.mesa-imagen svg,
+.mesa-imagen img {
+  transition: transform var(--media) var(--curva);
+}
+
+.mesa:hover .mesa-imagen svg,
+.mesa:hover .mesa-imagen img {
+  transform: scale(1.06);
+}
+
+.mesa-accion {
+  transition: transform var(--rapida) var(--curva);
+}
+
+.mesa:hover .mesa-accion {
+  transform: translateX(4px);
+}
+
+/* Botones y controles: color, borde y sombra cambian suavemente */
+.btn,
+.boton-icono,
+.filtro-boton,
+.pestana,
+.dia,
+.slot,
+.contador button,
+.menu a,
+.menu-boton,
+.sidebar-nav button,
+.sidebar-salir,
+.enlace-boton,
+.interruptor,
+.campo input,
+.dialogo select,
+.dialogo textarea,
+.tabla select,
+.tabla input,
+.filtros input,
+.filtros select {
+  transition:
+    background-color var(--rapida) var(--curva),
+    color var(--rapida) var(--curva),
+    border-color var(--rapida) var(--curva),
+    box-shadow var(--rapida) var(--curva),
+    transform var(--rapida) var(--curva),
+    opacity var(--rapida) var(--curva);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: none;
+}
+
+.btn-primario:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(242, 140, 40, 0.35);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  border-color: var(--color-primario);
+}
+
+.btn:active:not(:disabled),
+.boton-icono:active,
+.filtro-boton:active,
+.pestana:active,
+.dia:active:not(:disabled),
+.slot:active:not(:disabled),
+.contador button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.boton-icono:hover {
+  background-color: #E6EAED;
+}
+
+.filtro-boton:hover:not(.activo),
+.pestana:hover:not(.activa) {
+  background-color: #EEF1F3;
+}
+
+.dia:hover:not(:disabled):not([aria-pressed="true"]) {
+  border-color: var(--color-primario);
+  transform: translateY(-2px);
+}
+
+.slot:hover:not(:disabled):not([aria-pressed="true"]) {
+  background-color: #D6EEDD;
+  transform: translateY(-2px);
+}
+
+.slot[aria-pressed="true"] {
+  animation: pulso 320ms var(--curva);
+}
+
+.campo input:focus,
+.dialogo select:focus,
+.dialogo textarea:focus {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(15, 43, 61, 0.12);
+  outline: none;
+}
+
+.campo input[aria-invalid="true"] {
+  animation: sacudir 260ms ease-in-out;
+}
+
+.interruptor::before {
+  transition: background-color var(--media) var(--curva), background-position var(--media) var(--curva), transform var(--rapida);
+}
+
+.interruptor:active::before {
+  transform: scale(0.94);
+}
+
+/* Mensajes que aparecen: errores, avisos y estados */
+.aviso:not([hidden]) {
+  animation: aparecer 260ms var(--curva) backwards;
+}
+
+.error:not([hidden]) {
+  animation: aparecer 260ms var(--curva) backwards, sacudir 300ms 260ms ease-in-out;
+}
+
+.mensaje-slots,
+.jornada,
+.estado-vacio {
+  animation: aparecer 300ms var(--curva) backwards;
+}
+
+.jornada + .jornada {
+  animation-delay: 60ms;
+}
+
+.aviso-flotante:not([hidden]) {
+  animation: subir-aviso 300ms var(--curva) backwards;
+}
+
+/* Menú móvil */
+.menu.abierto {
+  animation: aparecer 240ms var(--curva) backwards;
+}
+
+/* Modal de reserva y diálogos del panel: abren y cierran con fundido */
+.modal,
+.dialogo {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+  transition:
+    opacity var(--media) var(--curva),
+    transform var(--media) var(--curva),
+    overlay var(--media) allow-discrete,
+    display var(--media) allow-discrete;
+}
+
+.modal[open],
+.dialogo[open] {
+  opacity: 1;
+  transform: none;
+}
+
+.modal::backdrop,
+.dialogo::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--media) var(--curva),
+    overlay var(--media) allow-discrete,
+    display var(--media) allow-discrete;
+}
+
+.modal[open]::backdrop,
+.dialogo[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .modal[open],
+  .dialogo[open] {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  .modal[open]::backdrop,
+  .dialogo[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* Paso de la reserva a la confirmación */
+.modal-reserva:not([hidden]),
+.confirmacion:not([hidden]) {
+  animation: aparecer 360ms var(--curva) backwards;
+}
+
+.confirmacion:not([hidden]) .check {
+  animation: check-entrada 520ms 120ms var(--curva) backwards;
+}
+
+.confirmacion:not([hidden]) .check path {
+  stroke-dasharray: 30;
+  animation: trazar 400ms 420ms ease-out backwards;
+}
+
+.confirmacion:not([hidden]) .comprobante {
+  animation: aparecer 420ms 200ms var(--curva) backwards;
+}
+
+/* Panel: cada sección entra con fundido al cambiar de pestaña */
+.seccion-panel:not([hidden]) {
+  animation: aparecer 320ms var(--curva) backwards;
+}
+
+.tabla tbody tr {
+  transition: background-color var(--rapida);
+  animation: aparecer-suave 300ms var(--curva) backwards;
+}
+
+.tabla tbody tr:hover {
+  background-color: #FAFBFC;
+}
+
+/* Las secciones del inicio aparecen al hacer scroll (navegadores compatibles) */
+@supports (animation-timeline: view()) {
+  .seccion-encabezado,
+  #carta > h2,
+  #carta > .seccion-etiqueta,
+  .pestanas,
+  .footer-grilla > * {
+    animation: aparecer linear backwards;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+}
+
+/* Accesibilidad: sin animaciones si el sistema lo pide */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

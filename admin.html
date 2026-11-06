@@ -27,6 +27,10 @@
     </div>
 
     <div class="login-caja">
+      <a href="/" class="btn btn-secundario btn-pequeno login-inicio">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        Volver al inicio
+      </a>
       <form id="form-login" class="login-form" novalidate>
         <span class="login-icono" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
@@ -43,7 +47,10 @@
         </label>
         <p id="login-error" class="error" role="alert" hidden></p>
         <button type="submit" class="btn btn-oscuro" id="login-boton">Entrar al panel</button>
-        <a href="/" class="enlace-volver">← Volver al sitio</a>
+        <a href="/" class="btn btn-secundario">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+          Ir a la página principal
+        </a>
       </form>
     </div>
   </section>
@@ -71,6 +78,9 @@
       </nav>
       <div class="sidebar-pie">
         <span id="usuario-correo" class="usuario-correo"></span>
+        <a href="/" class="sidebar-salir" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Ver sitio
+        </a>
         <button type="button" id="boton-salir" class="sidebar-salir">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>Cerrar sesión
         </button>

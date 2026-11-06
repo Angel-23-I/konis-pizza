@@ -39,6 +39,7 @@ Hoy las reservas se toman a mano por llamada, WhatsApp o Instagram, lo que causa
 konys-reservas-app/
 ├── index.html              # Página principal (cliente)
 ├── admin.html              # Panel de administración
+├── 404.html                # Página de error para rutas que no existen
 ├── css/
 │   └── styles.css
 ├── js/

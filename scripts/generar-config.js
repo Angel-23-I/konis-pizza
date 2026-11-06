@@ -19,7 +19,7 @@ const destino = path.join(raiz, 'dist');
 
 // Archivos y carpetas que se publican. Todo lo demás (package.json,
 // supabase/, scripts/, docs/) queda fuera del sitio.
-const PUBLICOS = ['index.html', 'admin.html', 'css', 'js'];
+const PUBLICOS = ['index.html', 'admin.html', '404.html', 'css', 'js'];
 
 // Lee un archivo .env local (solo para desarrollo) sin dependencias externas
 const rutaEnv = path.join(raiz, '.env');
