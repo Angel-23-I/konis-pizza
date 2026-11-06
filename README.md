@@ -81,6 +81,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
 5. Abre la dirección que aparece en la terminal. El panel está en `/admin`.
 
 > El servidor local sirve la carpeta `dist/`. Si cambias el código, vuelve a ejecutar `npm run build` (o `npm run dev`).
+> Si cambias `vercel.json` (por ejemplo, la política de seguridad), detén el servidor con `Ctrl + C` y vuelve a ejecutar `npm run dev`: el servidor solo lee los encabezados al arrancar.
 
 ## Despliegue en Vercel
 

@@ -1344,9 +1344,11 @@ body:has(.modal[open]) {
   }
 
   /* El modal deja de ocupar toda la pantalla */
+  /* fit-content y no auto: el <dialog> usa inset: 0, y con height: auto
+     se estiraría a toda la pantalla dejando una franja vacía abajo */
   .modal {
     width: min(1120px, calc(100% - 48px));
-    height: auto;
+    height: fit-content;
     max-height: calc(100% - 48px);
     margin: auto;
     border-radius: 24px;
