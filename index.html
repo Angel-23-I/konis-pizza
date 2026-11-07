@@ -32,6 +32,7 @@
         <a href="#inicio">Inicio</a>
         <a href="#mesas">Mesas</a>
         <a href="#carta">Carta</a>
+        <a href="#mi-reserva">Mi reserva</a>
         <a href="#nosotros">Nosotros</a>
         <a href="#ubicacion">Ubicación</a>
         <a href="/admin" class="menu-admin" aria-label="Acceso administrador" title="Administrador">
@@ -127,6 +128,51 @@
         <button type="button" role="tab" class="pestana" data-categoria="bebidas" aria-selected="false">Bebidas</button>
       </div>
       <div id="lista-platos" class="grilla-platos" role="tabpanel" aria-live="polite"></div>
+    </section>
+
+    <!-- Consultar, modificar o cancelar una reserva (celular + código) -->
+    <section id="mi-reserva" class="seccion contenedor">
+      <div class="mi-reserva">
+        <div class="mi-reserva-texto">
+          <span class="seccion-etiqueta">MI RESERVA</span>
+          <h2>¿Necesitas cambiar tu reserva?</h2>
+          <p class="texto-suave">Escribe el celular que usaste al reservar y el código de 6 caracteres de tu comprobante. Puedes cambiar la fecha, la hora o el número de personas, o cancelarla.</p>
+          <p class="texto-suave nota-mi-reserva">¿Reservaste sin celular o perdiste el código? <a href="https://api.whatsapp.com/send/?phone=573224603184&amp;text=Hola%2C+quisiera+cambiar+mi+reserva&amp;type=phone_number&amp;app_absent=0" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.</p>
+        </div>
+
+        <div class="mi-reserva-panel">
+          <form id="form-buscar" class="form-buscar" novalidate>
+            <label class="campo">Celular
+              <input type="tel" id="buscar-celular" autocomplete="tel-national" inputmode="numeric" maxlength="10"
+                     pattern="3[0-9]{9}" placeholder="3001234567" required>
+            </label>
+            <label class="campo">Código de reserva
+              <input type="text" id="buscar-codigo" autocomplete="off" maxlength="6" spellcheck="false"
+                     pattern="[A-Za-z0-9]{6}" placeholder="Ej: K7F2QX" class="campo-codigo" required>
+            </label>
+            <button type="submit" class="btn btn-oscuro" id="boton-buscar">Buscar mi reserva</button>
+          </form>
+          <p id="error-buscar" class="error" role="alert" hidden></p>
+
+          <article id="reserva-encontrada" class="reserva-encontrada" aria-live="polite" hidden>
+            <div class="reserva-encontrada-cabecera">
+              <span>RESERVA <strong id="mi-codigo"></strong></span>
+              <span id="mi-estado" class="estado-ok">Confirmada</span>
+            </div>
+            <dl class="comprobante-datos">
+              <div><dt>Nombre</dt><dd id="mi-nombre"></dd></div>
+              <div><dt>Mesa</dt><dd id="mi-mesa"></dd></div>
+              <div><dt>Fecha</dt><dd id="mi-fecha"></dd></div>
+              <div><dt>Hora</dt><dd id="mi-hora"></dd></div>
+              <div><dt>Personas</dt><dd id="mi-personas"></dd></div>
+            </dl>
+            <div class="reserva-encontrada-botones" id="mi-acciones">
+              <button type="button" class="btn btn-primario" id="boton-modificar">Cambiar fecha, hora o personas</button>
+              <button type="button" class="btn btn-peligro" id="boton-cancelar">Cancelar reserva</button>
+            </div>
+          </article>
+        </div>
+      </div>
     </section>
 
     <!-- Quiénes somos y galería de fotos reales -->
@@ -267,6 +313,8 @@
             </button>
           </div>
 
+          <p id="aviso-edicion" class="aviso-edicion" hidden></p>
+
           <fieldset class="bloque">
             <legend>¿Qué día vienes?</legend>
             <div id="lista-dias" class="dias"></div>
@@ -282,14 +330,18 @@
             <div id="lista-slots" aria-live="polite"></div>
           </fieldset>
 
-          <fieldset class="bloque">
+          <fieldset class="bloque" id="bloque-datos" disabled>
             <legend>Tus datos</legend>
-            <div class="campos">
+            <p id="datos-pendiente" class="datos-pendiente">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Primero elige una hora disponible y aquí aparecerán tus datos.
+            </p>
+            <div class="campos" id="datos-campos" hidden>
               <label class="campo">Nombre completo
                 <input type="text" id="campo-nombre" name="nombre" autocomplete="name" minlength="2" maxlength="50"
                        pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ .'\-]*" spellcheck="false"
                        placeholder="Ej: Juan Pérez" aria-describedby="ayuda-nombre" required>
-                <small id="ayuda-nombre" class="ayuda">Solo letras y espacios, máximo 50.</small>
+                <small id="ayuda-nombre" class="ayuda" aria-live="polite">Solo letras y espacios, máximo 50.</small>
               </label>
               <div class="campo">
                 <span id="etiqueta-personas">Número de personas</span>
@@ -302,7 +354,7 @@
               <label class="campo"><span>Teléfono <span class="opcional">(opcional)</span></span>
                 <input type="tel" id="campo-contacto" name="contacto" autocomplete="tel-national" inputmode="numeric"
                        maxlength="10" pattern="3[0-9]{9}" placeholder="3001234567" aria-describedby="ayuda-contacto">
-                <small id="ayuda-contacto" class="ayuda">Celular de 10 dígitos que empiece por 3.</small>
+                <small id="ayuda-contacto" class="ayuda" aria-live="polite">Opcional · lo necesitas para modificar o cancelar tu reserva.</small>
               </label>
             </div>
             <p id="aviso-capacidad" class="aviso" hidden></p>
@@ -324,10 +376,15 @@
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
           </span>
           <h2 tabindex="-1" id="confirmacion-titulo">¡Tu mesa está reservada!</h2>
-          <p>Muestra este comprobante al llegar a Konys Pizza.</p>
+          <p id="confirmacion-subtitulo">Muestra este comprobante al llegar a Konys Pizza.</p>
         </div>
         <div class="comprobante">
           <div class="comprobante-cabecera"><span>COMPROBANTE</span><strong id="comp-numero"></strong></div>
+          <div class="comprobante-codigo">
+            <span>Código de reserva</span>
+            <strong id="comp-codigo"></strong>
+          </div>
+          <p id="comp-nota-codigo" class="comprobante-nota"></p>
           <dl class="comprobante-datos">
             <div><dt>Nombre</dt><dd id="comp-nombre"></dd></div>
             <div><dt>Mesa</dt><dd id="comp-mesa"></dd></div>

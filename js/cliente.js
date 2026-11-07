@@ -24,8 +24,11 @@ const estado = {
     fecha: null,
     slot: null,       // { inicio, fin } en minutos
     personas: 2,
-    ocupados: []      // reservas confirmadas de la mesa en la fecha elegida
-  }
+    ocupados: [],     // reservas confirmadas de la mesa en la fecha elegida
+    modo: 'crear',    // 'crear' o 'editar'
+    existente: null   // reserva que se está modificando (modo editar)
+  },
+  miReserva: null     // reserva encontrada en la sección "Mi reserva"
 };
 
 // Atajo para document.getElementById
@@ -371,16 +374,21 @@ function diasDisponibles() {
   });
 }
 
-function abrirReserva(mesaId) {
+// existente: reserva a modificar (con su codigo y contacto). Sin ella, se crea una nueva.
+function abrirReserva(mesaId, existente = null) {
   const mesa = estado.mesas.find((m) => m.id === mesaId);
   if (!mesa) return;
 
   const r = estado.reserva;
+  const dias = diasDisponibles();
   r.mesa = mesa;
   r.slot = null;
   r.ocupados = [];
-  r.personas = Math.min(2, mesa.capacidad);
-  r.fecha = diasDisponibles().find((d) => d.habilitado)?.fecha ?? null;
+  r.modo = existente ? 'editar' : 'crear';
+  r.existente = existente;
+  r.personas = existente ? Math.min(existente.num_personas, mesa.capacidad) : Math.min(2, mesa.capacidad);
+  const fechaPropia = existente && dias.find((d) => d.fecha === existente.fecha && d.habilitado);
+  r.fecha = fechaPropia ? existente.fecha : (dias.find((d) => d.habilitado)?.fecha ?? null);
 
   $('modal-titulo').textContent = mesa.nombre;
   $('modal-detalle').textContent = `${ZONAS[mesa.zona]} · hasta ${mesa.capacidad} personas`;
@@ -389,6 +397,20 @@ function abrirReserva(mesaId) {
   limpiarError();
   $('campo-nombre').removeAttribute('aria-invalid');
   $('campo-contacto').removeAttribute('aria-invalid');
+  // En modo edición el nombre y el celular no cambian: identifican la reserva
+  $('campo-nombre').value = existente ? existente.cliente_nombre : '';
+  $('campo-contacto').value = existente ? (existente.cliente_contacto ?? '') : '';
+  $('campo-nombre').readOnly = Boolean(existente);
+  $('campo-contacto').readOnly = Boolean(existente);
+  $('aviso-edicion').hidden = !existente;
+  if (existente) {
+    $('aviso-edicion').textContent = `Estás modificando la reserva ${existente.codigo} ` +
+      `(${formatoFecha(existente.fecha, { weekday: 'long', day: 'numeric', month: 'long' })}, ${aHora12(aMinutos(existente.hora_inicio))}). ` +
+      'Elige la nueva fecha, hora o número de personas.';
+  }
+  $('boton-confirmar').textContent = textoBotonConfirmar();
+  validarNombreEnVivo();
+  validarCelularEnVivo();
 
   $('vista-reserva').hidden = false;
   $('vista-confirmacion').hidden = true;
@@ -398,8 +420,16 @@ function abrirReserva(mesaId) {
   renderDias();
   renderPersonas();
   actualizarResumen();
-  if (r.fecha) elegirFecha(r.fecha);
-  else $('lista-slots').innerHTML = '<p class="mensaje-slots">No hay días con horarios disponibles en las próximas dos semanas.</p>';
+  if (r.fecha) {
+    elegirFecha(r.fecha).then(() => {
+      // Al editar, su turno actual queda marcado para que pueda cambiar solo las personas
+      if (existente && r.fecha === existente.fecha && !r.slot) {
+        const inicio = aMinutos(existente.hora_inicio);
+        const fin = aMinutos(existente.hora_fin);
+        if (!yaPaso(r.fecha, { inicio, fin })) elegirSlot(inicio, fin, { enfocar: false });
+      }
+    });
+  } else $('lista-slots').innerHTML = '<p class="mensaje-slots">No hay días con horarios disponibles en las próximas dos semanas.</p>';
 }
 
 function renderDias() {
@@ -427,7 +457,7 @@ async function elegirFecha(fecha) {
 
   $('lista-slots').innerHTML = '<p class="mensaje-slots">Consultando horarios…</p>';
   try {
-    r.ocupados = await cargarOcupados(fecha, r.mesa.id);
+    r.ocupados = sinReservaPropia(await cargarOcupados(fecha, r.mesa.id), fecha);
   } catch (error) {
     console.error(error);
     $('lista-slots').innerHTML = '<p class="mensaje-slots">No pudimos consultar los horarios. Intenta de nuevo.</p>';
@@ -458,11 +488,18 @@ function renderSlots() {
     </div>`).join('');
 }
 
-function elegirSlot(inicio, fin) {
+function elegirSlot(inicio, fin, { enfocar = true } = {}) {
+  const primeraVez = !estado.reserva.slot && enfocar;
   estado.reserva.slot = { inicio, fin };
   limpiarError();
   renderSlots();
   actualizarResumen();
+
+  // Paso 3: al elegir la primera hora aparecen los datos y se lleva al cliente ahí
+  if (primeraVez) {
+    $('bloque-datos').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('campo-nombre').focus({ preventScroll: true });
+  }
 }
 
 function renderPersonas() {
@@ -473,7 +510,7 @@ function renderPersonas() {
 
   // Flujo alternativo del CU-02: avisar el máximo permitido
   const aviso = $('aviso-capacidad');
-  aviso.hidden = personas < mesa.capacidad;
+  aviso.hidden = personas < mesa.capacidad || !estado.reserva.slot;
   aviso.textContent = `Esta mesa recibe máximo ${mesa.capacidad} ${mesa.capacidad === 1 ? 'persona' : 'personas'}. ` +
     'Para grupos más grandes elige una mesa con más capacidad.';
   actualizarResumen();
@@ -493,7 +530,82 @@ function actualizarResumen() {
 
   $('ind-fecha').classList.toggle('hecho', Boolean(fecha));
   $('ind-hora').classList.toggle('hecho', Boolean(slot));
-  $('ind-datos').classList.toggle('hecho', $('campo-nombre').value.trim().length >= 2);
+  $('ind-datos').classList.toggle('hecho', Boolean(slot) && datosValidos());
+
+  // Los datos solo se muestran (y se pueden llenar) después de elegir una hora
+  const hayHora = Boolean(slot);
+  $('bloque-datos').disabled = !hayHora;
+  $('datos-campos').hidden = !hayHora;
+  $('datos-pendiente').hidden = hayHora;
+  if (!hayHora) $('aviso-capacidad').hidden = true;
+  else if (estado.reserva.mesa) $('aviso-capacidad').hidden = personas < estado.reserva.mesa.capacidad;
+
+  // Confirmar solo se activa cuando todo está completo y es válido
+  const boton = $('boton-confirmar');
+  if (!boton.dataset.cargando) {
+    boton.disabled = !(hayHora && datosValidos());
+    boton.title = !hayHora ? 'Primero elige una hora' : (datosValidos() ? '' : 'Completa tus datos');
+  }
+}
+
+function textoBotonConfirmar() {
+  return estado.reserva.modo === 'editar' ? 'Guardar cambios' : 'Confirmar reserva';
+}
+
+// Al editar, el turno actual de la reserva no cuenta como ocupado
+function sinReservaPropia(ocupados, fecha) {
+  const propia = estado.reserva.modo === 'editar' ? estado.reserva.existente : null;
+  if (!propia || propia.fecha !== fecha) return ocupados;
+  return ocupados.filter((o) => hhmm(o.hora_inicio) !== propia.hora_inicio);
+}
+
+function hhmm(hora) {
+  return hora.slice(0, 5);
+}
+
+function datosValidos() {
+  const nombre = $('campo-nombre').value.trim();
+  const celular = $('campo-contacto').value;
+  return nombre.length >= 2 && REGEX_NOMBRE.test(nombre) && (celular === '' || REGEX_CELULAR.test(celular));
+}
+
+// Mensaje bajo un campo: 'neutro', 'pendiente', 'ok' o 'error'
+function mostrarEstadoCampo(campo, ayuda, tipo, texto) {
+  ayuda.textContent = texto;
+  ayuda.className = `ayuda ${tipo}`;
+  campo.classList.toggle('valido', tipo === 'ok');
+  if (tipo === 'error') campo.setAttribute('aria-invalid', 'true');
+  else campo.removeAttribute('aria-invalid');
+}
+
+function validarNombreEnVivo() {
+  const campo = $('campo-nombre');
+  const nombre = campo.value.trim();
+  if (nombre === '') {
+    mostrarEstadoCampo(campo, $('ayuda-nombre'), 'neutro', 'Solo letras y espacios, máximo 50.');
+  } else if (nombre.length < 2) {
+    mostrarEstadoCampo(campo, $('ayuda-nombre'), 'pendiente', 'Escribe al menos 2 letras.');
+  } else {
+    mostrarEstadoCampo(campo, $('ayuda-nombre'), 'ok', '✓ Nombre válido');
+  }
+}
+
+// Validación del celular mientras se escribe: dice qué falta o qué está mal
+function validarCelularEnVivo(alSalir = false) {
+  const campo = $('campo-contacto');
+  const celular = campo.value;
+  const ayuda = $('ayuda-contacto');
+  if (celular === '') {
+    mostrarEstadoCampo(campo, ayuda, 'neutro', 'Opcional · celular de 10 dígitos que empiece por 3.');
+  } else if (!celular.startsWith('3')) {
+    mostrarEstadoCampo(campo, ayuda, 'error', 'Debe empezar por 3 (celular colombiano).');
+  } else if (celular.length < 10) {
+    const faltan = 10 - celular.length;
+    const texto = `Faltan ${faltan} ${faltan === 1 ? 'dígito' : 'dígitos'}.`;
+    mostrarEstadoCampo(campo, ayuda, alSalir ? 'error' : 'pendiente', alSalir ? `Número incompleto: ${texto.toLowerCase()}` : texto);
+  } else {
+    mostrarEstadoCampo(campo, ayuda, 'ok', '✓ Número válido');
+  }
 }
 
 function mostrarError(mensaje) {
@@ -532,12 +644,13 @@ async function confirmarReserva(evento) {
 
   const boton = $('boton-confirmar');
   boton.disabled = true;
-  boton.textContent = 'Confirmando…';
+  boton.dataset.cargando = 'si';
+  boton.textContent = r.modo === 'editar' ? 'Guardando…' : 'Confirmando…';
   limpiarError();
 
   try {
     // Paso 10 del flujo: verificar otra vez que el slot siga libre
-    r.ocupados = await cargarOcupados(r.fecha, r.mesa.id);
+    r.ocupados = sinReservaPropia(await cargarOcupados(r.fecha, r.mesa.id), r.fecha);
     if (estadoSlot(r.fecha, r.slot, r.ocupados) === 'ocupado') {
       r.slot = null;
       renderSlots();
@@ -546,15 +659,23 @@ async function confirmarReserva(evento) {
       return;
     }
 
-    // crear_reserva vuelve a validar todo en el servidor y evita la doble reserva
-    const { data, error } = await db.rpc('crear_reserva', {
-      p_mesa_id: r.mesa.id,
-      p_fecha: r.fecha,
-      p_hora_inicio: aHora(r.slot.inicio),
-      p_nombre: nombre,
-      p_num_personas: r.personas,
-      p_contacto: contacto || null
-    });
+    // El servidor vuelve a validar todo y evita la doble reserva
+    const { data, error } = r.modo === 'editar'
+      ? await db.rpc('modificar_reserva', {
+          p_contacto: r.existente.cliente_contacto,
+          p_codigo: r.existente.codigo,
+          p_fecha: r.fecha,
+          p_hora_inicio: aHora(r.slot.inicio),
+          p_num_personas: r.personas
+        })
+      : await db.rpc('crear_reserva', {
+          p_mesa_id: r.mesa.id,
+          p_fecha: r.fecha,
+          p_hora_inicio: aHora(r.slot.inicio),
+          p_nombre: nombre,
+          p_num_personas: r.personas,
+          p_contacto: contacto || null
+        });
 
     if (error) {
       if (['KP004', 'KP005'].includes(error.code)) {
@@ -566,13 +687,18 @@ async function confirmarReserva(evento) {
     }
 
     mostrarConfirmacion(data);
+    if (r.modo === 'editar') {
+      estado.miReserva = data;
+      renderMiReserva();
+    }
     refrescarDisponibilidad();
   } catch (error) {
     console.error(error);
     mostrarError('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
   } finally {
-    boton.disabled = false;
-    boton.textContent = 'Confirmar reserva';
+    boton.dataset.cargando = '';
+    boton.textContent = textoBotonConfirmar();
+    actualizarResumen();
   }
 }
 
@@ -587,12 +713,131 @@ function mostrarConfirmacion(reserva) {
   $('comp-fecha').textContent = formatoFecha(reserva.fecha, { weekday: 'long', day: 'numeric', month: 'long' });
   $('comp-hora').textContent = `${aHora12(aMinutos(reserva.hora_inicio))} – ${aHora12(aMinutos(reserva.hora_fin))}`;
   $('comp-personas').textContent = reserva.num_personas;
+  $('comp-codigo').textContent = reserva.codigo;
+
+  const editada = estado.reserva.modo === 'editar';
+  $('confirmacion-titulo').textContent = editada ? '¡Reserva actualizada!' : '¡Tu mesa está reservada!';
+  $('confirmacion-subtitulo').textContent = editada
+    ? 'Estos son los nuevos datos de tu reserva.'
+    : 'Muestra este comprobante al llegar a Konys Pizza.';
+  $('comp-nota-codigo').textContent = reserva.cliente_contacto
+    ? 'Guarda este código: con él y tu celular puedes cambiar o cancelar la reserva en «Mi reserva».'
+    : 'No dejaste celular: si necesitas cambiarla, escríbenos por WhatsApp con este código.';
 
   $('vista-reserva').hidden = true;
   $('vista-confirmacion').hidden = false;
   $('modal-reserva').classList.add('estrecho');
   $('modal-reserva').scrollTop = 0;
   $('confirmacion-titulo').focus();
+}
+
+/* ----------------------------------------------------------
+   Mi reserva: buscar con celular + código, modificar o cancelar
+   ---------------------------------------------------------- */
+
+const REGEX_CODIGO = /^[A-Z0-9]{6}$/;
+
+function limpiarCodigo(valor) {
+  return valor.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+}
+
+function mostrarErrorBuscar(mensaje) {
+  $('error-buscar').textContent = mensaje;
+  $('error-buscar').hidden = !mensaje;
+}
+
+async function buscarMiReserva(evento) {
+  evento.preventDefault();
+  const celular = limpiarCelular($('buscar-celular').value);
+  const codigo = limpiarCodigo($('buscar-codigo').value);
+  $('reserva-encontrada').hidden = true;
+
+  if (!REGEX_CELULAR.test(celular)) {
+    $('buscar-celular').setAttribute('aria-invalid', 'true');
+    $('buscar-celular').focus();
+    mostrarErrorBuscar('Escribe el celular de 10 dígitos que empieza por 3.');
+    return;
+  }
+  if (!REGEX_CODIGO.test(codigo)) {
+    $('buscar-codigo').setAttribute('aria-invalid', 'true');
+    $('buscar-codigo').focus();
+    mostrarErrorBuscar('El código tiene 6 letras o números. Lo encuentras en tu comprobante.');
+    return;
+  }
+
+  const boton = $('boton-buscar');
+  boton.disabled = true;
+  boton.textContent = 'Buscando…';
+  mostrarErrorBuscar('');
+  try {
+    const { data, error } = await db.rpc('buscar_reserva', { p_contacto: celular, p_codigo: codigo });
+    if (error) {
+      mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos buscar tu reserva. Intenta de nuevo.');
+      return;
+    }
+    estado.miReserva = data;
+    renderMiReserva();
+  } catch (error) {
+    console.error(error);
+    mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Buscar mi reserva';
+  }
+}
+
+function renderMiReserva() {
+  const r = estado.miReserva;
+  if (!r) {
+    $('reserva-encontrada').hidden = true;
+    return;
+  }
+  const activa = r.estado === 'confirmada';
+  $('mi-codigo').textContent = r.codigo;
+  $('mi-nombre').textContent = r.cliente_nombre;
+  $('mi-mesa').textContent = `${r.mesa} · ${ZONAS[r.zona]}`;
+  $('mi-fecha').textContent = formatoFecha(r.fecha, { weekday: 'long', day: 'numeric', month: 'long' });
+  $('mi-hora').textContent = `${aHora12(aMinutos(r.hora_inicio))} – ${aHora12(aMinutos(r.hora_fin))}`;
+  $('mi-personas').textContent = r.num_personas;
+  $('mi-estado').textContent = activa ? 'Confirmada' : 'Cancelada';
+  $('mi-estado').className = activa ? 'estado-ok' : 'estado-cancelada';
+  $('mi-acciones').hidden = !activa;
+  $('reserva-encontrada').hidden = false;
+}
+
+function modificarMiReserva() {
+  const r = estado.miReserva;
+  if (!estado.mesas.some((m) => m.id === r.mesa_id)) {
+    mostrarErrorBuscar('Esa mesa no está disponible por ahora. Escríbenos por WhatsApp para cambiar tu reserva.');
+    return;
+  }
+  abrirReserva(r.mesa_id, r);
+}
+
+async function cancelarMiReserva() {
+  const r = estado.miReserva;
+  const cuando = `${formatoFecha(r.fecha, { weekday: 'long', day: 'numeric', month: 'long' })} a las ${aHora12(aMinutos(r.hora_inicio))}`;
+  if (!confirm(`¿Cancelar tu reserva del ${cuando}? La mesa quedará libre para otras personas y no se puede deshacer.`)) return;
+
+  const boton = $('boton-cancelar');
+  boton.disabled = true;
+  boton.textContent = 'Cancelando…';
+  try {
+    const { data, error } = await db.rpc('cancelar_reserva', { p_contacto: r.cliente_contacto, p_codigo: r.codigo });
+    if (error) {
+      mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos cancelar la reserva. Intenta de nuevo.');
+      return;
+    }
+    estado.miReserva = data;
+    renderMiReserva();
+    refrescarDisponibilidad();
+  } catch (error) {
+    console.error(error);
+    mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Cancelar reserva';
+  }
 }
 
 async function refrescarDisponibilidad() {
@@ -670,16 +915,35 @@ function registrarEventos() {
     const campo = $('campo-nombre');
     const limpio = limpiarNombre(campo.value);
     if (campo.value !== limpio) campo.value = limpio;
-    campo.removeAttribute('aria-invalid');
+    validarNombreEnVivo();
     actualizarResumen();
   });
   $('campo-contacto').addEventListener('input', () => {
     const campo = $('campo-contacto');
     const limpio = limpiarCelular(campo.value);
     if (campo.value !== limpio) campo.value = limpio;
+    validarCelularEnVivo();
+    actualizarResumen();
+  });
+  $('campo-contacto').addEventListener('blur', () => validarCelularEnVivo(true));
+  $('form-reserva').addEventListener('submit', confirmarReserva);
+
+  // Mi reserva
+  $('form-buscar').addEventListener('submit', buscarMiReserva);
+  $('buscar-celular').addEventListener('input', () => {
+    const campo = $('buscar-celular');
+    const limpio = limpiarCelular(campo.value);
+    if (campo.value !== limpio) campo.value = limpio;
     campo.removeAttribute('aria-invalid');
   });
-  $('form-reserva').addEventListener('submit', confirmarReserva);
+  $('buscar-codigo').addEventListener('input', () => {
+    const campo = $('buscar-codigo');
+    const limpio = limpiarCodigo(campo.value);
+    if (campo.value !== limpio) campo.value = limpio;
+    campo.removeAttribute('aria-invalid');
+  });
+  $('boton-modificar').addEventListener('click', modificarMiReserva);
+  $('boton-cancelar').addEventListener('click', cancelarMiReserva);
 
   const modal = $('modal-reserva');
   modal.addEventListener('click', (e) => {

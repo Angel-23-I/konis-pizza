@@ -2852,3 +2852,218 @@ select.estado-completada {
     transform: none !important;
   }
 }
+
+/* ==========================================================
+   Reserva por pasos, validación en vivo y "Mi reserva"
+   ========================================================== */
+
+/* Paso 3 bloqueado hasta elegir una hora */
+.datos-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border: 1.5px dashed var(--color-borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
+  font-size: 14px;
+}
+
+.datos-pendiente svg {
+  flex: none;
+  color: var(--color-acento-texto);
+}
+
+#bloque-datos:disabled legend {
+  color: var(--color-apagado);
+}
+
+#datos-campos:not([hidden]) {
+  animation: aparecer 360ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+}
+
+.campo input[readonly] {
+  background: var(--color-fondo);
+  color: var(--color-texto-suave);
+}
+
+/* Estados de la validación en vivo */
+.ayuda.pendiente {
+  color: var(--color-aviso);
+}
+
+.ayuda.ok {
+  color: var(--color-libre-texto);
+  font-weight: 600;
+}
+
+.ayuda.error {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.campo input.valido {
+  border-color: var(--color-libre);
+}
+
+.campo input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+/* Aviso del modo edición dentro del modal */
+.aviso-edicion {
+  padding: 12px 14px;
+  border-radius: var(--radio);
+  background: #EAF1F5;
+  color: var(--color-primario);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Código en el comprobante */
+.comprobante-codigo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radio);
+  background: var(--color-acento-fondo);
+  color: var(--color-aviso);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.comprobante-codigo strong {
+  font: 700 22px var(--fuente-titulos);
+  letter-spacing: 0.18em;
+  color: var(--color-primario);
+}
+
+.comprobante-nota {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+
+.codigo {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* Sección Mi reserva */
+.mi-reserva {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+.mi-reserva-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mi-reserva-texto h2 {
+  margin-top: 0;
+}
+
+.nota-mi-reserva a {
+  color: var(--color-libre-texto);
+  font-weight: 600;
+}
+
+.mi-reserva-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+}
+
+.form-buscar {
+  display: grid;
+  gap: 14px;
+}
+
+.form-buscar .btn {
+  min-height: 48px;
+}
+
+.campo-codigo {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 600 !important;
+}
+
+.reserva-encontrada {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--color-borde-fuerte);
+}
+
+.reserva-encontrada:not([hidden]) {
+  animation: aparecer 360ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.reserva-encontrada-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-texto-suave);
+}
+
+.reserva-encontrada-cabecera strong {
+  color: var(--color-texto);
+  letter-spacing: 0.15em;
+}
+
+.reserva-encontrada-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.estado-cancelada {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-error-fondo);
+  color: #A3260F;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@media (min-width: 600px) {
+  .form-buscar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .form-buscar .btn {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 900px) {
+  .mi-reserva {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 48px;
+  }
+}

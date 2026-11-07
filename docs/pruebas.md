@@ -4,13 +4,13 @@ Etapa 5 del plan de desarrollo: pruebas de punta a punta, validaciones, segurida
 
 | Dato | Valor |
 |---|---|
-| Fecha de ejecución | 5 de noviembre de 2026 |
+| Fecha de ejecución | 5 de noviembre de 2026 (grupos BD a RES) y 7 de noviembre de 2026 (grupos P, GR y M) |
 | Entorno | Servidor local `npm run dev` (carpeta `dist/`) en `http://localhost:3000`, con los mismos encabezados de seguridad que Vercel |
 | Base de datos | Supabase, proyecto `konys-pizza` (PostgreSQL 17, us-east-1) |
 | Navegador | Chrome 152 (Chromium) |
 | Datos | 8 mesas, 14 horarios (2 jornadas × 7 días, turnos de 60 min), 45 platos de la carta real |
 
-**Resultado general: 89 de 89 casos aprobados.**
+**Resultado general: 125 de 125 casos aprobados.**
 
 | Grupo | Casos | Aprobados |
 |---|---|---|
@@ -20,6 +20,9 @@ Etapa 5 del plan de desarrollo: pruebas de punta a punta, validaciones, segurida
 | Interfaz del cliente (UI) | 25 | 25 |
 | Panel de administración (AD) | 14 | 14 |
 | Responsividad (RES) | 8 | 8 |
+| Reserva por pasos y validación en vivo (P) | 7 | 7 |
+| Gestión de reservas en la base (GR) | 18 | 18 |
+| Mi reserva en la interfaz (M) | 11 | 11 |
 
 ## Cómo se ejecutaron
 
@@ -153,6 +156,63 @@ Pruebas sobre la función `crear_reserva()` y las reglas RLS, llamando a la base
 | RES-07 | Escritorio 1198 × 916 | Modal de reserva | Ajustado a su contenido, sin franja vacía | Modal 754 px = contenido 754 px | ✅ |
 | RES-08 | Portátil 1366 × 650 | Modal en pantalla baja | Scroll interno y botón "Confirmar" alcanzable | Scroll interno; botón visible al final | ✅ |
 
+## 7. Reserva por pasos y validación en vivo
+
+El cliente elige primero el día y la hora. Solo entonces aparecen y se habilitan los campos de sus datos, y el botón "Confirmar" se activa cuando todo es válido.
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| P-01 | Abrir el modal sin elegir hora | Datos ocultos y deshabilitados, aviso visible, "Confirmar" deshabilitado | Así; aviso "Primero elige una hora disponible…" | ✅ |
+| P-02 | Elegir una hora | Aparecen los datos, el cursor va al nombre | Campos visibles, foco en "Nombre completo", "Confirmar" aún deshabilitado | ✅ |
+| P-03 | Nombre de 1 letra | Aviso de que falta | "Escribe al menos 2 letras." | ✅ |
+| P-04 | Nombre válido | Confirmación en verde y "Confirmar" habilitado | "✓ Nombre válido", botón habilitado | ✅ |
+| P-05 | Escribir el celular dígito a dígito | Mensaje en cada paso | `2` → "Debe empezar por 3"; `3`…`30012345` → "Faltan 9…2 dígitos"; `3001234567` → "✓ Número válido"; vacío → "Opcional" | ✅ |
+| P-06 | Salir del campo con el celular incompleto | Se marca como error | "Número incompleto: faltan 4 dígitos." | ✅ |
+| P-07 | Cambiar de día después de llenar los datos | Se ocultan los datos hasta elegir otra hora; lo escrito se conserva | Datos ocultos, "Confirmar" deshabilitado, nombre conservado | ✅ |
+
+## 8. Consultar, modificar y cancelar una reserva
+
+Cada reserva tiene un código de 6 caracteres (sin letras ni números que se confundan, como 0/O o 1/I). Para encontrarla se piden **celular + código**: con el celular solo, cualquiera que lo conozca podría ver o cambiar la reserva de otra persona.
+
+### En la base de datos (con el rol público, dentro de una transacción que se deshace)
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| GR-00 | Reservas que ya existían | Todas reciben un código único | 8 de 8 con código, 8 distintos | ✅ |
+| GR-01 | Crear reserva con celular | Devuelve el código | Código `7JGD6H` | ✅ |
+| GR-02 | Buscar con el celular con espacios y el código en minúsculas | La encuentra | "Laura Prueba, Mesa 4 18:00, 3 personas" | ✅ |
+| GR-03 | Código equivocado | No la encuentra | `KP010` "No encontramos una reserva activa…" | ✅ |
+| GR-04 | Celular de otra persona con el código correcto | No la encuentra | `KP010` | ✅ |
+| GR-05 | Datos con formato inválido | Rechazados | `KP009` "Revisa el celular (10 dígitos) y el código de 6 caracteres." | ✅ |
+| GR-06 | Cambiar solo el número de personas en su mismo turno | Se guarda (su propio turno no cuenta como ocupado) | 18:00, 5 personas | ✅ |
+| GR-07 | Cambiar fecha y hora | Se guarda y el código no cambia | Nueva fecha, 20:00–21:00, mismo código | ✅ |
+| GR-08 | Turno anterior después de cambiar | Queda libre | 0 ocupados a las 18:00 | ✅ |
+| GR-09 | Cambiar a un turno ocupado | Rechazado | `KP005` | ✅ |
+| GR-10 | Cambiar a más personas que la capacidad | Rechazado | `KP002` "Esta mesa recibe máximo 6 personas." | ✅ |
+| GR-11 | Cambiar a una fecha pasada | Rechazado | `KP003` | ✅ |
+| GR-12 | Cambiar a una hora que no es un turno | Rechazado | `KP004` | ✅ |
+| GR-13 | Cancelar | Estado cancelada y turno libre | Cancelada; turno libre | ✅ |
+| GR-14 | Buscar una reserva cancelada | No aparece como activa | `KP010` | ✅ |
+| GR-15 | Llamar desde la API la función interna `validar_turno` | Sin permiso | `42501` permission denied | ✅ |
+| GR-16 | Llamar desde la API `reserva_a_json` | Sin permiso | `42501` permission denied | ✅ |
+| GR-17 | Público intenta cambiar códigos directamente | Ningún cambio | 0 filas (RLS) | ✅ |
+
+### En la página
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| M-01 | Reservar con celular | El comprobante muestra el código y explica para qué sirve | Código `GKYXZP` y la nota "Guarda este código…" | ✅ |
+| M-02 | Buscar con código incompleto | Error sin consultar al servidor | "El código tiene 6 letras o números…" | ✅ |
+| M-03 | Buscar con código equivocado | Error del servidor | "No encontramos una reserva activa con ese celular y código." | ✅ |
+| M-04 | Escribir celular con espacios y código en minúsculas | Se limpian solos | `3209876543` y `GKYXZP` | ✅ |
+| M-05 | Buscar con datos correctos | Muestra la reserva | Código, nombre, mesa, fecha, hora, personas y estado "Confirmada" | ✅ |
+| M-06 | "Cambiar fecha, hora o personas" | Modal en modo edición con su turno marcado | Aviso "Estás modificando la reserva GKYXZP…", 7:00 p. m. marcado, nombre y celular bloqueados, botón "Guardar cambios" | ✅ |
+| M-07 | Guardar el cambio a 9:00 p. m. y 4 personas | Comprobante actualizado con el mismo código | "¡Reserva actualizada!", 9:00–10:00 p. m., 4 personas, `GKYXZP` | ✅ |
+| M-08 | Tarjeta de "Mi reserva" después de guardar | Muestra los datos nuevos | 9:00–10:00 p. m., 4 personas | ✅ |
+| M-09 | Abrir la misma mesa para reservar | 7:00 p. m. libre y 9:00 p. m. ocupado; el modal vuelve al modo normal | Correcto; botón "Confirmar reserva", nombre editable | ✅ |
+| M-10 | "Cancelar reserva" | Pide confirmación, queda cancelada y se ocultan los botones | Estado "Cancelada", botones ocultos | ✅ |
+| M-11 | Buscar de nuevo la cancelada | Ya no aparece como activa | "No encontramos una reserva activa…" | ✅ |
+
 ---
 
 ## Errores encontrados y corregidos durante el desarrollo
@@ -166,6 +226,7 @@ Pruebas sobre la función `crear_reserva()` y las reglas RLS, llamando a la base
 | 5 | El modal de reserva dejaba una franja vacía abajo | `height: auto` en un `<dialog>` con `inset: 0` lo estira a toda la pantalla | `height: fit-content` |
 | 6 | Un celular pegado como `+57 300…` quedaba mal | El filtro conservaba el 57 del indicativo | Se quita el 57 cuando sobran dígitos |
 | 7 | Vercel publicaría `package.json`, `supabase/` y `scripts/` | `outputDirectory: "."` | El build copia a `dist/` solo HTML, CSS, JS e imágenes |
+| 8 | El aviso del modo edición mostraba "p. m.." | La hora ya termina en punto | Se reescribió la frase |
 
 ## Pendiente por probar
 

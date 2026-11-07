@@ -9,7 +9,8 @@ Hoy las reservas se toman a mano por llamada, WhatsApp o Instagram, lo que causa
 **Módulo cliente** (sin registro)
 - Ver las mesas del salón y la terraza con su capacidad y disponibilidad.
 - Elegir fecha y hora entre los turnos libres (almuerzo 12:30–2:30 p. m. y noche 5:00–11:00 p. m.).
-- Confirmar la reserva con nombre, número de personas y teléfono opcional.
+- Confirmar la reserva con nombre, número de personas y teléfono opcional. Los datos se piden después de elegir la hora, y el celular se valida mientras se escribe.
+- Consultar, modificar (fecha, hora o personas) o cancelar una reserva en «Mi reserva», con el celular y el código del comprobante.
 - Consultar la carta digital por categorías.
 
 **Panel de administración** (`/admin`, protegido con contraseña)
@@ -52,6 +53,7 @@ konys-reservas-app/
 ├── supabase/
 │   ├── schema.sql          # Tablas, funciones y reglas de seguridad (RLS)
 │   ├── validaciones.sql    # Formatos permitidos y límites anti-abuso
+│   ├── gestion_reservas.sql # Código de reserva; consultar, modificar y cancelar
 │   ├── seed.sql            # Mesas, horarios y reservas de prueba
 │   └── carta.sql           # Carta real de Konys (45 platos)
 ├── docs/
@@ -72,7 +74,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    git clone https://github.com/Angel-23-I/konis-pizza.git
    cd konis-pizza
    ```
-2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
+2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/gestion_reservas.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
 3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
 4. Genera la configuración y abre un servidor local:
    ```bash

@@ -441,7 +441,7 @@ async function prepararReservas() {
 
 async function cargarReservas() {
   let consulta = db.from('reservas')
-    .select('id, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin, estado, mesas(nombre, zona)')
+    .select('id, codigo, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin, estado, mesas(nombre, zona)')
     .order('fecha')
     .order('hora_inicio');
 
@@ -454,7 +454,7 @@ async function cargarReservas() {
 
   const { data, error } = await consulta;
   if (error) {
-    $('tabla-reservas').innerHTML = filaVacia(7, 'No se pudieron cargar las reservas.');
+    $('tabla-reservas').innerHTML = filaVacia(8, 'No se pudieron cargar las reservas.');
     return;
   }
 
@@ -466,10 +466,11 @@ async function cargarReservas() {
     ` · ${confirmadas.length} confirmadas · ${personas} personas esperadas`;
 
   $('tabla-reservas').innerHTML = data.length === 0
-    ? filaVacia(7, 'No hay reservas con estos filtros.')
+    ? filaVacia(8, 'No hay reservas con estos filtros.')
     : data.map((r) => `
       <tr>
         <th scope="row">${escapar(r.cliente_nombre)}</th>
+        <td><code class="codigo">${escapar(r.codigo)}</code></td>
         <td>${escapar(r.mesas?.nombre)} · ${ZONAS[r.mesas?.zona] ?? ''}</td>
         <td>${formatoFecha(r.fecha)}</td>
         <td>${hhmm(r.hora_inicio)} – ${hhmm(r.hora_fin)}</td>
