@@ -1,3 +1,4 @@
+Angel David Infante Espinel - 01220371056
 # Konys Pizza – Sistema de Reservas de Mesas
 
 Aplicación web para que los clientes de **Konys Pizza** (Cra. 36 con calle 41, Bucaramanga) reserven mesa en línea, viendo la disponibilidad en tiempo real, y para que el administrador gestione mesas, horarios, reservas y la carta digital.
