@@ -62,7 +62,13 @@ if (!process.env.VERCEL) {
   const globales = vercel.headers.find((h) => h.source === '/(.*)').headers;
   fs.writeFileSync(path.join(destino, 'serve.json'), JSON.stringify({
     cleanUrls: true,
-    headers: [{ source: '**', headers: globales.filter((h) => h.key !== 'Strict-Transport-Security') }]
+    // En local (http://localhost) no aplican HSTS ni la mejora a https
+    headers: [{
+      source: '**',
+      headers: globales
+        .filter((h) => h.key !== 'Strict-Transport-Security')
+        .map((h) => ({ ...h, value: h.value.replace('; upgrade-insecure-requests', '') }))
+    }]
   }, null, 2));
 }
 

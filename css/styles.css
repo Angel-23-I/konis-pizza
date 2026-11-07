@@ -3944,3 +3944,78 @@ a {
   position: sticky;
   left: 0;
 }
+
+/* ==========================================================
+   Celulares y pantallas táctiles (auditoría de responsividad)
+   ========================================================== */
+
+/* Textos mínimos legibles */
+.logo-sub,
+.dia-mes {
+  font-size: 12px;
+}
+
+/* El enlace del WhatsApp en "Visítanos" se puede tocar cómodamente */
+.datos-contacto a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+@media (max-width: 899px), (pointer: coarse) {
+  /* Objetivos táctiles de al menos 44 px */
+  .campana,
+  .boton-icono,
+  .paginacion-boton,
+  .contador button,
+  .toast-cerrar {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .btn-pequeno,
+  .btn,
+  .enlace-boton,
+  .tarjeta-panel .enlace-boton,
+  .notificacion-acciones .enlace-boton {
+    min-height: 44px;
+  }
+
+  .enlace-boton {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* iPhone hace zoom al tocar un campo con letra menor a 16 px: todos en 16 px */
+  input,
+  select,
+  textarea,
+  .tabla input[type="time"],
+  .tabla select,
+  .filtros input,
+  .filtros select,
+  .acciones-encabezado select,
+  .dialogo select,
+  .dialogo textarea {
+    font-size: 16px;
+  }
+
+  /* Muesca y barra inferior del iPhone */
+  .whatsapp-flotante {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .notificaciones-flotantes {
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+  }
+
+  .modal-pie {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+
+  /* El botón flotante no tapa el final de la página */
+  .footer-base {
+    padding-bottom: 96px;
+  }
+}

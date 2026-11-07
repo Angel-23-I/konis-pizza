@@ -87,17 +87,29 @@ function confirmar({ titulo, mensaje, textoConfirmar = 'Aceptar', textoCancelar 
   aceptar.className = `btn ${peligro ? 'btn-peligro-solido' : 'btn-primario'}`;
 
   return new Promise((resolver) => {
+    // Responde con el primer evento que llegue (clic, Esc o cierre) y una sola vez:
+    // no depende solo del evento "close", que algunos navegadores retrasan.
+    let resuelto = false;
+    const terminar = (respuesta) => {
+      if (resuelto) return;
+      resuelto = true;
+      dialogo.removeEventListener('click', alHacerClic);
+      dialogo.removeEventListener('cancel', alCancelar);
+      dialogo.removeEventListener('close', alCerrar);
+      if (dialogo.open) dialogo.close(respuesta ? 'si' : 'no');
+      resolver(respuesta);
+    };
     const alHacerClic = (evento) => {
       const boton = evento.target.closest('[data-respuesta]');
-      if (boton) dialogo.close(boton.dataset.respuesta);
-      else if (evento.target === dialogo) dialogo.close('no'); // clic en el fondo
+      if (boton) terminar(boton.dataset.respuesta === 'si');
+      else if (evento.target === dialogo) terminar(false); // clic en el fondo
     };
+    const alCancelar = () => terminar(false); // tecla Esc
+    const alCerrar = () => terminar(dialogo.returnValue === 'si');
     dialogo.addEventListener('click', alHacerClic);
-    dialogo.addEventListener('close', () => {
-      dialogo.removeEventListener('click', alHacerClic);
-      resolver(dialogo.returnValue === 'si');
-    }, { once: true });
-    dialogo.returnValue = 'no'; // Esc cuenta como "no"
+    dialogo.addEventListener('cancel', alCancelar);
+    dialogo.addEventListener('close', alCerrar);
+    dialogo.returnValue = 'no';
     dialogo.showModal();
     // En acciones destructivas el foco empieza en "Cancelar"
     (peligro ? cancelar : aceptar).focus();

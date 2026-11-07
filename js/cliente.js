@@ -680,6 +680,10 @@ async function confirmarReserva(evento) {
           p_contacto: contacto || null
         });
 
+    if (data?.error) {
+      mostrarError(data.error);
+      return;
+    }
     if (error) {
       if (['KP004', 'KP005'].includes(error.code)) {
         r.slot = null;
@@ -772,8 +776,9 @@ async function buscarMiReserva(evento) {
   await conCarga($('boton-buscar'), 'Buscando…', async () => {
     try {
       const { data, error } = await db.rpc('buscar_reserva', { p_contacto: celular, p_codigo: codigo });
-      if (error) {
-        mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos buscar tu reserva. Intenta de nuevo.');
+      if (error || data?.error) {
+        const mensaje = data?.error ?? (error.code?.startsWith('KP') ? error.message : 'No pudimos buscar tu reserva. Intenta de nuevo.');
+        mostrarErrorBuscar(mensaje);
         return;
       }
       estado.miReserva = data;
@@ -829,8 +834,8 @@ async function cancelarMiReserva() {
   await conCarga($('boton-cancelar'), 'Cancelando…', async () => {
     try {
       const { data, error } = await db.rpc('cancelar_reserva', { p_contacto: r.cliente_contacto, p_codigo: r.codigo });
-      if (error) {
-        const mensaje = error.code?.startsWith('KP') ? error.message : 'No pudimos cancelar la reserva. Intenta de nuevo.';
+      if (error || data?.error) {
+        const mensaje = data?.error ?? (error.code?.startsWith('KP') ? error.message : 'No pudimos cancelar la reserva. Intenta de nuevo.');
         mostrarErrorBuscar(mensaje);
         notificar(mensaje, 'error');
         return;

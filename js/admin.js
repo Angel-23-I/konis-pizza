@@ -136,6 +136,7 @@ async function mostrarPanel(sesion) {
   $('panel').hidden = false;
   $('usuario-correo').textContent = sesion.user.email ?? '';
   iniciarNotificaciones();
+  reiniciarInactividad();
   await cambiarSeccion(estado.seccion);
 }
 
@@ -918,7 +919,7 @@ const TIPOS_NOTIFICACION = {
 };
 
 function textoReserva(d) {
-  return `${formatoFecha(d.fecha)} · ${hora12(d.hora_inicio)} · ${d.num_personas} pers.`;
+  return `${formatoFecha(d.fecha)} · ${hora12(d.hora_inicio)} · ${escapar(d.num_personas)} pers.`;
 }
 
 async function cargarNotificaciones() {
@@ -1024,6 +1025,30 @@ function iniciarNotificaciones() {
     if (estado.seccion === 'inicio' && !document.hidden) cargarDashboard();
   }, 60000);
   actualizarContador();
+}
+
+/* ----------------------------------------------------------
+   Cierre de sesión por inactividad (30 minutos)
+   Evita que un panel abierto en un computador compartido quede expuesto.
+   ---------------------------------------------------------- */
+
+const MINUTOS_INACTIVIDAD = 30;
+let temporizadorInactividad;
+
+function reiniciarInactividad() {
+  clearTimeout(temporizadorInactividad);
+  temporizadorInactividad = setTimeout(async () => {
+    detenerNotificaciones();
+    await db.auth.signOut();
+    document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+    mostrarLogin('Cerramos tu sesión por inactividad. Vuelve a ingresar para continuar.');
+  }, MINUTOS_INACTIVIDAD * 60 * 1000);
+}
+
+function vigilarInactividad() {
+  ['pointerdown', 'keydown', 'scroll', 'visibilitychange'].forEach((evento) =>
+    document.addEventListener(evento, () => { if (!$('panel').hidden) reiniciarInactividad(); }, { passive: true }));
+  reiniciarInactividad();
 }
 
 function detenerNotificaciones() {
@@ -1173,6 +1198,13 @@ function registrarEventos() {
 
 async function iniciar() {
   registrarEventos();
+  vigilarInactividad();
+  db.auth.onAuthStateChange((evento) => {
+    if (evento === 'SIGNED_OUT' && !$('panel').hidden) {
+      detenerNotificaciones();
+      mostrarLogin('Tu sesión se cerró. Vuelve a ingresar para continuar.');
+    }
+  });
   const { data } = await db.auth.getSession();
   if (data.session && (await esAdministrador())) {
     await mostrarPanel(data.session);

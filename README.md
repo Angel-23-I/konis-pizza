@@ -58,6 +58,7 @@ konys-reservas-app/
 │   ├── validaciones.sql    # Formatos permitidos y límites anti-abuso
 │   ├── gestion_reservas.sql # Código de reserva; consultar, modificar y cancelar
 │   ├── notificaciones.sql  # Notificaciones automáticas y en tiempo real
+│   ├── seguridad.sql       # Mínimo privilegio y límites contra abuso
 │   ├── seed.sql            # Mesas, horarios y reservas de prueba
 │   └── carta.sql           # Carta real de Konys (45 platos)
 ├── docs/
@@ -78,7 +79,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    git clone https://github.com/Angel-23-I/konis-pizza.git
    cd konis-pizza
    ```
-2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/gestion_reservas.sql`, `supabase/notificaciones.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
+2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/gestion_reservas.sql`, `supabase/notificaciones.sql`, `supabase/seguridad.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
 3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
 4. Genera la configuración y abre un servidor local:
    ```bash
@@ -122,7 +123,7 @@ Los formularios filtran lo que se escribe y la base de datos vuelve a validar to
 | Descripción de plato | Máximo 200 caracteres, sin `<` ni `>` |
 | Precio | Entero en pesos, de 0 a 1.000.000 |
 
-Límites anti-abuso: máximo 3 reservas activas por teléfono y 2 por nombre en el mismo día.
+Límites anti-abuso: máximo 3 reservas activas por teléfono, 2 por nombre en el mismo día y 5 por conexión por hora; tras 8 búsquedas fallidas de celular y código, la conexión se bloquea 15 minutos. Detalle completo en [docs/auditoria-seguridad.md](docs/auditoria-seguridad.md).
 
 ## Seguridad del sitio
 
