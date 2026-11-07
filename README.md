@@ -32,7 +32,7 @@ Hoy las reservas se toman a mano por llamada, WhatsApp o Instagram, lo que causa
 
 ## Enlaces
 
-- **Aplicación desplegada:** _pendiente_
+- **Aplicación desplegada:** https://konis-pizza.vercel.app (panel: https://konis-pizza.vercel.app/admin)
 - **Video explicativo:** _pendiente_
 - **Documento de proyecto y mockups:** carpeta [`docs/`](docs/)
 
