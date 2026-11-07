@@ -47,7 +47,6 @@
     <section id="inicio" class="hero">
       <div class="contenedor hero-fila">
         <div class="hero-texto">
-          <span class="etiqueta-hero">LA CONOPIZZERÍA · EL PRADO, BUCARAMANGA</span>
           <h1>La pizza más icónica <span class="resaltado">de la ciudad</span>, con tu mesa lista.</h1>
           <p>Pizza en cono con papitas al horno. Mira qué mesas están libres, elige fecha y hora, y confirma tu reserva en menos de un minuto.</p>
           <div class="hero-botones">
@@ -57,6 +56,10 @@
             <a href="#carta" class="btn btn-contorno">Ver la carta</a>
           </div>
           <ul class="hero-horario">
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+              El Prado, Bucaramanga
+            </li>
             <li>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
               Almuerzo 12:30 – 2:30 p. m.
@@ -95,7 +98,6 @@
     <section id="mesas" class="seccion contenedor">
       <div class="seccion-encabezado">
         <div>
-          <span class="seccion-etiqueta">NUESTRAS MESAS</span>
           <h2>¿Dónde te quieres sentar?</h2>
           <p class="texto-suave" id="mesas-subtitulo">Cargando disponibilidad…</p>
         </div>
@@ -112,7 +114,6 @@
     <section id="carta" class="seccion contenedor">
       <div class="seccion-encabezado">
         <div>
-          <span class="seccion-etiqueta">CARTA DIGITAL</span>
           <h2>Antójate antes de llegar</h2>
           <p class="texto-suave">Todas nuestras Konys vienen con papitas al horno.</p>
         </div>
@@ -134,7 +135,6 @@
     <section id="mi-reserva" class="seccion contenedor">
       <div class="mi-reserva">
         <div class="mi-reserva-texto">
-          <span class="seccion-etiqueta">MI RESERVA</span>
           <h2>¿Necesitas cambiar tu reserva?</h2>
           <p class="texto-suave">Escribe el celular que usaste al reservar y el código de 6 caracteres de tu comprobante. Puedes cambiar la fecha, la hora o el número de personas, o cancelarla.</p>
           <p class="texto-suave nota-mi-reserva">¿Reservaste sin celular o perdiste el código? <a href="https://api.whatsapp.com/send/?phone=573224603184&amp;text=Hola%2C+quisiera+cambiar+mi+reserva&amp;type=phone_number&amp;app_absent=0" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.</p>
@@ -178,7 +178,6 @@
     <!-- Quiénes somos y galería de fotos reales -->
     <section id="nosotros" class="seccion contenedor nosotros">
       <div class="nosotros-texto">
-        <span class="seccion-etiqueta">NUESTRA HISTORIA</span>
         <h2>La conopizzería más ikónica de Colombia</h2>
         <p>En Konys servimos la pizza en cono: masa crocante rellena de queso gratinado, salsa napolitana y los mejores ingredientes, siempre con papitas al horno.</p>
         <p>Nuestra Konys <strong>Bukara</strong>, un homenaje a la Ciudad Bonita, ganó el <strong>Pizza Master 2023</strong>.</p>
@@ -199,7 +198,6 @@
 
     <!-- Ubicación con mapa -->
     <section id="ubicacion" class="seccion contenedor">
-      <span class="seccion-etiqueta">VISÍTANOS</span>
       <h2>Te esperamos en El Prado</h2>
       <div class="ubicacion">
         <div class="mapa">
@@ -287,7 +285,6 @@
       <!-- Paso de reserva -->
       <div id="vista-reserva" class="modal-reserva">
         <aside class="modal-resumen">
-          <span class="seccion-etiqueta oscura">TU MESA</span>
           <div class="modal-foto" id="modal-foto"></div>
           <div>
             <h2 id="modal-titulo">Mesa</h2>
@@ -408,6 +405,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
           integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
   <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/cliente.js"></script>
 </body>

@@ -586,7 +586,7 @@ function validarNombreEnVivo() {
   } else if (nombre.length < 2) {
     mostrarEstadoCampo(campo, $('ayuda-nombre'), 'pendiente', 'Escribe al menos 2 letras.');
   } else {
-    mostrarEstadoCampo(campo, $('ayuda-nombre'), 'ok', '✓ Nombre válido');
+    mostrarEstadoCampo(campo, $('ayuda-nombre'), 'ok', 'Nombre válido');
   }
 }
 
@@ -604,7 +604,7 @@ function validarCelularEnVivo(alSalir = false) {
     const texto = `Faltan ${faltan} ${faltan === 1 ? 'dígito' : 'dígitos'}.`;
     mostrarEstadoCampo(campo, ayuda, alSalir ? 'error' : 'pendiente', alSalir ? `Número incompleto: ${texto.toLowerCase()}` : texto);
   } else {
-    mostrarEstadoCampo(campo, ayuda, 'ok', '✓ Número válido');
+    mostrarEstadoCampo(campo, ayuda, 'ok', 'Número válido');
   }
 }
 
@@ -645,7 +645,10 @@ async function confirmarReserva(evento) {
   const boton = $('boton-confirmar');
   boton.disabled = true;
   boton.dataset.cargando = 'si';
-  boton.textContent = r.modo === 'editar' ? 'Guardando…' : 'Confirmando…';
+  const indicador = document.createElement('span');
+  indicador.className = 'indicador-carga';
+  indicador.setAttribute('aria-hidden', 'true');
+  boton.replaceChildren(indicador, document.createTextNode(r.modo === 'editar' ? ' Guardando…' : ' Confirmando…'));
   limpiarError();
 
   try {
@@ -765,25 +768,22 @@ async function buscarMiReserva(evento) {
     return;
   }
 
-  const boton = $('boton-buscar');
-  boton.disabled = true;
-  boton.textContent = 'Buscando…';
   mostrarErrorBuscar('');
-  try {
-    const { data, error } = await db.rpc('buscar_reserva', { p_contacto: celular, p_codigo: codigo });
-    if (error) {
-      mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos buscar tu reserva. Intenta de nuevo.');
-      return;
+  await conCarga($('boton-buscar'), 'Buscando…', async () => {
+    try {
+      const { data, error } = await db.rpc('buscar_reserva', { p_contacto: celular, p_codigo: codigo });
+      if (error) {
+        mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos buscar tu reserva. Intenta de nuevo.');
+        return;
+      }
+      estado.miReserva = data;
+      renderMiReserva();
+      notificar('Encontramos tu reserva.');
+    } catch (error) {
+      console.error(error);
+      mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
     }
-    estado.miReserva = data;
-    renderMiReserva();
-  } catch (error) {
-    console.error(error);
-    mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
-  } finally {
-    boton.disabled = false;
-    boton.textContent = 'Buscar mi reserva';
-  }
+  });
 }
 
 function renderMiReserva() {
@@ -817,27 +817,34 @@ function modificarMiReserva() {
 async function cancelarMiReserva() {
   const r = estado.miReserva;
   const cuando = `${formatoFecha(r.fecha, { weekday: 'long', day: 'numeric', month: 'long' })} a las ${aHora12(aMinutos(r.hora_inicio))}`;
-  if (!confirm(`¿Cancelar tu reserva del ${cuando}? La mesa quedará libre para otras personas y no se puede deshacer.`)) return;
+  const seguro = await confirmar({
+    titulo: '¿Cancelar tu reserva?',
+    mensaje: `Tu reserva del ${cuando} en la ${r.mesa} quedará cancelada y la mesa se liberará para otras personas. No se puede deshacer.`,
+    textoConfirmar: 'Sí, cancelar reserva',
+    textoCancelar: 'Mantener reserva',
+    peligro: true
+  });
+  if (!seguro) return;
 
-  const boton = $('boton-cancelar');
-  boton.disabled = true;
-  boton.textContent = 'Cancelando…';
-  try {
-    const { data, error } = await db.rpc('cancelar_reserva', { p_contacto: r.cliente_contacto, p_codigo: r.codigo });
-    if (error) {
-      mostrarErrorBuscar(error.code?.startsWith('KP') ? error.message : 'No pudimos cancelar la reserva. Intenta de nuevo.');
-      return;
+  await conCarga($('boton-cancelar'), 'Cancelando…', async () => {
+    try {
+      const { data, error } = await db.rpc('cancelar_reserva', { p_contacto: r.cliente_contacto, p_codigo: r.codigo });
+      if (error) {
+        const mensaje = error.code?.startsWith('KP') ? error.message : 'No pudimos cancelar la reserva. Intenta de nuevo.';
+        mostrarErrorBuscar(mensaje);
+        notificar(mensaje, 'error');
+        return;
+      }
+      estado.miReserva = data;
+      renderMiReserva();
+      refrescarDisponibilidad();
+      notificar('Tu reserva quedó cancelada. ¡Te esperamos en otra ocasión!');
+    } catch (error) {
+      console.error(error);
+      mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
+      notificar('No pudimos conectarnos. Revisa tu internet.', 'error');
     }
-    estado.miReserva = data;
-    renderMiReserva();
-    refrescarDisponibilidad();
-  } catch (error) {
-    console.error(error);
-    mostrarErrorBuscar('No pudimos conectarnos. Revisa tu internet e intenta de nuevo.');
-  } finally {
-    boton.disabled = false;
-    boton.textContent = 'Cancelar reserva';
-  }
+  });
 }
 
 async function refrescarDisponibilidad() {

@@ -21,12 +21,20 @@ const HORARIO_BASE = {
 };
 
 const estado = {
-  seccion: 'mesas',
+  seccion: 'inicio',
   mesas: [],
   horarios: [],
   platos: [],
   editandoMesa: null,
-  editandoPlato: null
+  editandoPlato: null,
+  notificaciones: [],
+  reservas: [],
+  // Página actual de cada tabla (10 filas por página)
+  paginas: { mesas: 1, reservas: 1, platos: 1, notificaciones: 1, hoy: 1 },
+  reservasHoy: [],
+  filtroNoti: 'todas',
+  canal: null,
+  intervalo: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -70,14 +78,9 @@ function hoyColombia() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 }
 
-let temporizadorAviso;
+// Mensaje flotante (js/ui.js). esError: rojo; si no, verde.
 function avisar(mensaje, esError = false) {
-  const aviso = $('aviso-flotante');
-  aviso.textContent = mensaje;
-  aviso.classList.toggle('error', esError);
-  aviso.hidden = false;
-  clearTimeout(temporizadorAviso);
-  temporizadorAviso = setTimeout(() => { aviso.hidden = true; }, 3500);
+  notificar(mensaje, esError ? 'error' : 'ok');
 }
 
 function errorAmigable(error, porDefecto) {
@@ -99,6 +102,12 @@ async function escribir(consulta) {
   if (error) return { error };
   if (!data || data.length === 0) return { error: { code: '42501', message: 'Sin filas afectadas' } };
   return { data };
+}
+
+// Filas de esqueleto mientras llegan los datos
+function filasCargando(columnas, filas = 4) {
+  const celdas = '<td><span class="esqueleto-linea"></span></td>'.repeat(columnas);
+  return `<tr class="fila-cargando" aria-hidden="true">${celdas}</tr>`.repeat(filas);
 }
 
 function filaVacia(columnas, texto) {
@@ -126,6 +135,7 @@ async function mostrarPanel(sesion) {
   $('login').hidden = true;
   $('panel').hidden = false;
   $('usuario-correo').textContent = sesion.user.email ?? '';
+  iniciarNotificaciones();
   await cambiarSeccion(estado.seccion);
 }
 
@@ -164,8 +174,18 @@ async function iniciarSesion(evento) {
 }
 
 async function cerrarSesion() {
-  await db.auth.signOut();
+  const salir = await confirmar({
+    titulo: '¿Cerrar sesión?',
+    mensaje: 'Tendrás que volver a escribir tu correo y contraseña para entrar al panel.',
+    textoConfirmar: 'Cerrar sesión'
+  });
+  if (!salir) return;
+  await conCarga($('boton-salir'), 'Saliendo…', async () => {
+    detenerNotificaciones();
+    await db.auth.signOut();
+  });
   mostrarLogin();
+  notificar('Sesión cerrada.', 'info');
 }
 
 /* ----------------------------------------------------------
@@ -173,6 +193,8 @@ async function cerrarSesion() {
    ---------------------------------------------------------- */
 
 const CARGADORES = {
+  inicio: cargarDashboard,
+  notificaciones: cargarNotificaciones,
   mesas: cargarMesas,
   horarios: cargarHorarios,
   reservas: prepararReservas,
@@ -194,6 +216,7 @@ async function cambiarSeccion(seccion) {
    ---------------------------------------------------------- */
 
 async function cargarMesas() {
+  if (estado.mesas.length === 0) $('tabla-mesas').innerHTML = filasCargando(5);
   const { data, error } = await db.from('mesas').select('*').order('id');
   if (error) {
     $('tabla-mesas').innerHTML = filaVacia(5, 'No se pudieron cargar las mesas.');
@@ -208,9 +231,12 @@ function renderMesas() {
   $('resumen-mesas').textContent =
     `${activas} activas de ${estado.mesas.length}. Las mesas inactivas no aparecen para los clientes.`;
 
+  const pagina = paginar(estado.mesas, estado.paginas.mesas);
+  estado.paginas.mesas = pagina.pagina;
+  renderPaginacion($('pag-mesas'), pagina, (n) => { estado.paginas.mesas = n; renderMesas(); }, ['mesa', 'mesas']);
   $('tabla-mesas').innerHTML = estado.mesas.length === 0
     ? filaVacia(5, 'Aún no hay mesas. Crea la primera con “Nueva mesa”.')
-    : estado.mesas.map((m) => `
+    : pagina.items.map((m) => `
       <tr class="${m.activa ? '' : 'inactivo'}">
         <th scope="row">${escapar(m.nombre)}</th>
         <td>${ZONAS[m.zona]}</td>
@@ -228,9 +254,9 @@ function renderMesas() {
       </tr>`).join('');
 }
 
-async function alternarMesa(id) {
+async function alternarMesa(id, boton) {
   const mesa = estado.mesas.find((m) => m.id === id);
-  const { error } = await escribir(db.from('mesas').update({ activa: !mesa.activa }).eq('id', id));
+  const { error } = await conCarga(boton, '', () => escribir(db.from('mesas').update({ activa: !mesa.activa }).eq('id', id)));
   if (error) {
     avisar(errorAmigable(error, 'No se pudo cambiar el estado.'), true);
     return;
@@ -287,7 +313,7 @@ async function guardarMesa(evento) {
   const consulta = editando
     ? db.from('mesas').update(datos).eq('id', editando.id)
     : db.from('mesas').insert(datos);
-  const { error: errorDb } = await escribir(consulta);
+  const { error: errorDb } = await conCarga(evento.submitter, 'Guardando…', () => escribir(consulta));
   if (errorDb) {
     error.textContent = errorAmigable(errorDb, 'No se pudo guardar la mesa.');
     error.hidden = false;
@@ -295,14 +321,20 @@ async function guardarMesa(evento) {
   }
 
   $('dialogo-mesa').close();
-  avisar(editando ? 'Mesa actualizada.' : 'Mesa creada.');
+  avisar(editando ? `${datos.nombre} se actualizó.` : `${datos.nombre} se creó y ya está disponible para reservas.`);
   await cargarMesas();
 }
 
-async function borrarMesa(id) {
+async function borrarMesa(id, boton) {
   const mesa = estado.mesas.find((m) => m.id === id);
-  if (!confirm(`¿Borrar ${mesa.nombre}? Esta acción no se puede deshacer.`)) return;
-  const { error } = await escribir(db.from('mesas').delete().eq('id', id));
+  const seguro = await confirmar({
+    titulo: `¿Borrar ${mesa.nombre}?`,
+    mensaje: 'La mesa se eliminará por completo y no se puede deshacer. Si solo quieres que no se pueda reservar por un tiempo, usa el interruptor Activa/Inactiva.',
+    textoConfirmar: 'Sí, borrar mesa',
+    peligro: true
+  });
+  if (!seguro) return;
+  const { error } = await conCarga(boton, '', () => escribir(db.from('mesas').delete().eq('id', id)));
   if (error) {
     avisar(errorAmigable(error, 'No se pudo borrar la mesa.'), true);
     return;
@@ -404,10 +436,8 @@ async function guardarHorarios() {
     }
   }
 
-  const boton = $('guardar-horarios');
-  boton.disabled = true;
-  const { error } = await escribir(db.from('horarios').upsert(filas, { onConflict: 'dia_semana,jornada' }));
-  boton.disabled = false;
+  const { error } = await conCarga($('guardar-horarios'), 'Guardando…',
+    () => escribir(db.from('horarios').upsert(filas, { onConflict: 'dia_semana,jornada' })));
   if (error) {
     avisar(errorAmigable(error, 'No se pudieron guardar los horarios.'), true);
     return;
@@ -439,7 +469,10 @@ async function prepararReservas() {
   await cargarReservas();
 }
 
-async function cargarReservas() {
+// opciones.reiniciarPagina: false para quedarse en la página actual (al cambiar un estado)
+async function cargarReservas(opciones) {
+  if (opciones?.reiniciarPagina !== false) estado.paginas.reservas = 1;
+  $('tabla-reservas').innerHTML = filasCargando(8);
   let consulta = db.from('reservas')
     .select('id, codigo, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin, estado, mesas(nombre, zona)')
     .order('fecha')
@@ -465,9 +498,18 @@ async function cargarReservas() {
     (fecha ? ` el ${formatoFecha(fecha)}` : ' en total') +
     ` · ${confirmadas.length} confirmadas · ${personas} personas esperadas`;
 
+  estado.reservas = data;
+  renderReservas();
+}
+
+function renderReservas() {
+  const data = estado.reservas;
+  const pagina = paginar(data, estado.paginas.reservas);
+  estado.paginas.reservas = pagina.pagina;
+  renderPaginacion($('pag-reservas'), pagina, (n) => { estado.paginas.reservas = n; renderReservas(); }, ['reserva', 'reservas']);
   $('tabla-reservas').innerHTML = data.length === 0
-    ? filaVacia(8, 'No hay reservas con estos filtros.')
-    : data.map((r) => `
+    ? filaVacia(8, 'No hay reservas con estos filtros. Prueba con otra fecha o pulsa “Ver todas”.')
+    : pagina.items.map((r) => `
       <tr>
         <th scope="row">${escapar(r.cliente_nombre)}</th>
         <td><code class="codigo">${escapar(r.codigo)}</code></td>
@@ -488,6 +530,8 @@ async function cargarReservas() {
 async function cambiarEstadoReserva(select) {
   const id = Number(select.dataset.reserva);
   const nuevo = select.value;
+  select.disabled = true;
+  select.setAttribute('aria-busy', 'true');
   const { error } = await escribir(db.from('reservas').update({ estado: nuevo }).eq('id', id));
   if (error) {
     // 23P01: al volver a "confirmada" el horario ya lo tomó otra reserva
@@ -497,7 +541,7 @@ async function cambiarEstadoReserva(select) {
   } else {
     avisar(`Reserva marcada como ${ESTADOS[nuevo].toLowerCase()}.`);
   }
-  await cargarReservas();
+  await cargarReservas({ reiniciarPagina: false });
 }
 
 /* ----------------------------------------------------------
@@ -505,6 +549,7 @@ async function cambiarEstadoReserva(select) {
    ---------------------------------------------------------- */
 
 async function cargarPlatos() {
+  if (estado.platos.length === 0) $('tabla-platos').innerHTML = filasCargando(5);
   const { data, error } = await db.from('platos').select('*').order('categoria').order('nombre');
   if (error) {
     $('tabla-platos').innerHTML = filaVacia(5, 'No se pudo cargar la carta.');
@@ -515,9 +560,12 @@ async function cargarPlatos() {
 }
 
 function renderPlatos() {
+  const pagina = paginar(estado.platos, estado.paginas.platos);
+  estado.paginas.platos = pagina.pagina;
+  renderPaginacion($('pag-platos'), pagina, (n) => { estado.paginas.platos = n; renderPlatos(); }, ['plato', 'platos']);
   $('tabla-platos').innerHTML = estado.platos.length === 0
     ? filaVacia(5, 'La carta está vacía. Agrega el primer plato.')
-    : estado.platos.map((p) => `
+    : pagina.items.map((p) => `
       <tr class="${p.disponible ? '' : 'inactivo'}">
         <th scope="row">${escapar(p.nombre)}${p.descripcion ? `<br><small class="texto-suave">${escapar(p.descripcion)}</small>` : ''}</th>
         <td>${CATEGORIAS[p.categoria]}</td>
@@ -535,9 +583,9 @@ function renderPlatos() {
       </tr>`).join('');
 }
 
-async function alternarPlato(id) {
+async function alternarPlato(id, boton) {
   const plato = estado.platos.find((p) => p.id === id);
-  const { error } = await escribir(db.from('platos').update({ disponible: !plato.disponible }).eq('id', id));
+  const { error } = await conCarga(boton, '', () => escribir(db.from('platos').update({ disponible: !plato.disponible }).eq('id', id)));
   if (error) {
     avisar(errorAmigable(error, 'No se pudo cambiar la visibilidad.'), true);
     return;
@@ -597,7 +645,7 @@ async function guardarPlato(evento) {
   const consulta = editando
     ? db.from('platos').update(datos).eq('id', editando.id)
     : db.from('platos').insert(datos);
-  const { error: errorDb } = await escribir(consulta);
+  const { error: errorDb } = await conCarga(evento.submitter, 'Guardando…', () => escribir(consulta));
   if (errorDb) {
     error.textContent = errorAmigable(errorDb, 'No se pudo guardar el plato.');
     error.hidden = false;
@@ -605,20 +653,383 @@ async function guardarPlato(evento) {
   }
 
   $('dialogo-plato').close();
-  avisar(editando ? 'Plato actualizado.' : 'Plato agregado a la carta.');
+  avisar(editando ? `${datos.nombre} se actualizó.` : `${datos.nombre} se agregó a la carta.`);
   await cargarPlatos();
 }
 
-async function borrarPlato(id) {
+async function borrarPlato(id, boton) {
   const plato = estado.platos.find((p) => p.id === id);
-  if (!confirm(`¿Borrar "${plato.nombre}" de la carta? Si solo quieres esconderlo, usa el interruptor.`)) return;
-  const { error } = await escribir(db.from('platos').delete().eq('id', id));
+  const seguro = await confirmar({
+    titulo: `¿Borrar «${plato.nombre}»?`,
+    mensaje: 'El plato se eliminará de la carta y no se puede deshacer. Si solo quieres esconderlo por un tiempo, usa el interruptor Visible/Oculto.',
+    textoConfirmar: 'Sí, borrar plato',
+    peligro: true
+  });
+  if (!seguro) return;
+  const { error } = await conCarga(boton, '', () => escribir(db.from('platos').delete().eq('id', id)));
   if (error) {
     avisar(errorAmigable(error, 'No se pudo borrar el plato.'), true);
     return;
   }
   avisar(`${plato.nombre} fue borrado.`);
   await cargarPlatos();
+}
+
+/* ----------------------------------------------------------
+   Dashboard inicial: resumen del día
+   ---------------------------------------------------------- */
+
+const DIAS_ISO = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+const CAMPOS_RESERVA = 'id, codigo, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin, estado, creado_en, mesas(nombre, zona)';
+
+function sumarDias(fechaISO, dias) {
+  const fecha = new Date(`${fechaISO}T00:00:00Z`);
+  fecha.setUTCDate(fecha.getUTCDate() + dias);
+  return fecha.toISOString().slice(0, 10);
+}
+
+function minutosAhoraColombia() {
+  const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .format(new Date()).split(':').map(Number);
+  return h * 60 + m;
+}
+
+// "19:00:00" -> "7:00 p. m."
+function hora12(hora) {
+  const min = aMinutos(hora);
+  const h = Math.floor(min / 60);
+  return `${h % 12 || 12}:${String(min % 60).padStart(2, '0')} ${h >= 12 ? 'p. m.' : 'a. m.'}`;
+}
+
+function haceCuanto(fechaHora) {
+  const segundos = (new Date(fechaHora) - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+  const pasos = [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.35, 'week'], [12, 'month']];
+  let valor = segundos;
+  for (const [limite, unidad] of pasos) {
+    if (Math.abs(valor) < limite) return rtf.format(Math.round(valor), unidad);
+    valor /= limite;
+  }
+  return rtf.format(Math.round(valor), 'year');
+}
+
+function chipEstado(estadoReserva) {
+  return `<span class="chip-estado ${estadoReserva}">${ESTADOS[estadoReserva]}</span>`;
+}
+
+// Turnos por mesa que tiene un día según los horarios activos
+function turnosDelDia(fechaISO) {
+  const dia = DIAS_ISO[new Date(`${fechaISO}T00:00:00Z`).getUTCDay()];
+  return estado.horarios
+    .filter((h) => h.dia_semana === dia && h.activo)
+    .reduce((total, h) => total + contarTurnos(hhmm(h.hora_inicio), hhmm(h.hora_fin), h.duracion_slot), 0);
+}
+
+async function cargarDashboard() {
+  const hoy = hoyColombia();
+  $('dash-fecha').textContent = new Intl.DateTimeFormat('es-CO', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    .format(new Date(`${hoy}T00:00:00Z`));
+
+  const hace7 = new Date(Date.now() - 7 * 864e5).toISOString();
+  const [rango, recientes, mesas, horarios, canceladas] = await Promise.all([
+    db.from('reservas').select(CAMPOS_RESERVA).gte('fecha', hoy).lte('fecha', sumarDias(hoy, 6)).order('hora_inicio'),
+    db.from('reservas').select(CAMPOS_RESERVA).order('creado_en', { ascending: false }).limit(6),
+    db.from('mesas').select('*').order('id'),
+    db.from('horarios').select('*'),
+    db.from('notificaciones').select('id', { count: 'exact', head: true }).eq('tipo', 'cancelada').gte('creado_en', hace7)
+  ]);
+  const error = rango.error || recientes.error || mesas.error || horarios.error;
+  if (error) {
+    avisar('No se pudo cargar el resumen.', true);
+    return;
+  }
+  estado.mesas = mesas.data;
+  estado.horarios = horarios.data;
+
+  renderKpis(rango.data, hoy, canceladas.count ?? 0);
+  renderReservasHoy(rango.data.filter((r) => r.fecha === hoy));
+  renderGrafico(rango.data, hoy);
+  renderRecientes(recientes.data);
+  $('dash-actualizado').textContent = `Actualizado ${new Intl.DateTimeFormat('es-CO', { timeStyle: 'short' }).format(new Date())}`;
+}
+
+function renderKpis(reservas, hoy, canceladas) {
+  const deHoy = reservas.filter((r) => r.fecha === hoy);
+  const confirmadas = deHoy.filter((r) => r.estado === 'confirmada');
+  const completadas = deHoy.filter((r) => r.estado === 'completada').length;
+  const canceladasHoy = deHoy.filter((r) => r.estado === 'cancelada').length;
+
+  $('kpi-hoy').textContent = confirmadas.length;
+  $('kpi-hoy-detalle').textContent = `${completadas} completadas · ${canceladasHoy} canceladas`;
+  $('kpi-personas').textContent = confirmadas.reduce((suma, r) => suma + r.num_personas, 0);
+
+  // Ocupación: turnos tomados (no cancelados) sobre el total de turnos de las mesas activas
+  const mesasActivas = estado.mesas.filter((m) => m.activa).length;
+  const total = turnosDelDia(hoy) * mesasActivas;
+  const tomados = deHoy.filter((r) => r.estado !== 'cancelada').length;
+  const porcentaje = total ? Math.round((tomados / total) * 100) : 0;
+  $('kpi-ocupacion').textContent = total ? `${porcentaje} %` : 'Cerrado';
+  $('kpi-ocupacion-barra').style.width = `${porcentaje}%`;
+  $('kpi-ocupacion-detalle').textContent = total ? `${tomados} de ${total} turnos (${mesasActivas} mesas activas)` : 'Hoy no hay horario de atención';
+
+  const ahora = minutosAhoraColombia();
+  const proxima = confirmadas.find((r) => aMinutos(r.hora_inicio) >= ahora);
+  $('kpi-proxima').textContent = proxima ? hora12(proxima.hora_inicio) : '—';
+  $('kpi-proxima-detalle').textContent = proxima
+    ? `${proxima.cliente_nombre} · ${proxima.mesas?.nombre} · ${proxima.num_personas} pers.`
+    : 'No quedan reservas para hoy';
+
+  const semana = reservas.filter((r) => r.estado === 'confirmada');
+  $('kpi-semana').textContent = semana.length;
+  $('kpi-semana-detalle').textContent = `${semana.reduce((suma, r) => suma + r.num_personas, 0)} personas en total`;
+  $('kpi-canceladas').textContent = canceladas;
+}
+
+function renderReservasHoy(reservas = estado.reservasHoy) {
+  estado.reservasHoy = reservas;
+  const lista = $('dash-hoy');
+  const pagina = paginar(reservas, estado.paginas.hoy);
+  estado.paginas.hoy = pagina.pagina;
+  renderPaginacion($('pag-hoy'), pagina, (n) => { estado.paginas.hoy = n; renderReservasHoy(); }, ['reserva hoy', 'reservas hoy']);
+  if (reservas.length === 0) {
+    lista.innerHTML = '<li class="vacio-panel">No hay reservas para hoy. Las nuevas aparecen aquí solas, sin recargar.</li>';
+    return;
+  }
+  const ahora = minutosAhoraColombia();
+  lista.innerHTML = pagina.items.map((r) => {
+    const yaPaso = r.estado === 'confirmada' && aMinutos(r.hora_fin) <= ahora;
+    return `
+      <li class="item-hoy${yaPaso ? ' por-cerrar' : ''}${r.estado === 'cancelada' ? ' cancelada' : ''}">
+        <span class="item-hoy-hora">${hora12(r.hora_inicio)}</span>
+        <div class="item-hoy-info">
+          <strong>${escapar(r.cliente_nombre)}</strong>
+          <span>${escapar(r.mesas?.nombre)} · ${r.num_personas} pers. · <code class="codigo">${escapar(r.codigo)}</code>
+            ${r.cliente_contacto ? ` · <a href="tel:+57${escapar(r.cliente_contacto)}">${escapar(r.cliente_contacto)}</a>` : ''}</span>
+          ${yaPaso ? '<span class="nota-cierre">Ya pasó la hora: márcala como completada o cancelada.</span>' : ''}
+        </div>
+        <div class="item-hoy-acciones">
+          ${r.estado === 'confirmada'
+            ? `<button type="button" class="btn btn-secundario btn-pequeno" data-reserva-estado="completada" data-id="${r.id}">Llegó</button>
+               <button type="button" class="boton-icono borrar" data-reserva-estado="cancelada" data-id="${r.id}" aria-label="Cancelar la reserva de ${escapar(r.cliente_nombre)}">${ICONO_BORRAR}</button>`
+            : chipEstado(r.estado)}
+        </div>
+      </li>`;
+  }).join('');
+}
+
+// Barras verticales de un solo color (una serie: el título la nombra, sin leyenda).
+// Etiqueta directa solo en el máximo; cada barra tiene tooltip y hay una tabla para lectores de pantalla.
+function renderGrafico(reservas, hoy) {
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const fecha = sumarDias(hoy, i);
+    const del = reservas.filter((r) => r.fecha === fecha && r.estado === 'confirmada');
+    return {
+      fecha,
+      cantidad: del.length,
+      personas: del.reduce((suma, r) => suma + r.num_personas, 0),
+      etiqueta: i === 0 ? 'Hoy' : formatoFecha(fecha).split(',')[0].replace('.', ''),
+      completa: new Intl.DateTimeFormat('es-CO', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'short' }).format(new Date(`${fecha}T00:00:00Z`))
+    };
+  });
+  const maximo = Math.max(...dias.map((d) => d.cantidad), 1);
+  const indiceMaximo = dias.findIndex((d) => d.cantidad === maximo && d.cantidad > 0);
+
+  const grafico = $('dash-grafico');
+  grafico.setAttribute('aria-label', `Reservas confirmadas por día: ${dias.map((d) => `${d.completa}, ${d.cantidad}`).join('; ')}`);
+  grafico.innerHTML = `
+    <div class="grafico-barras">
+      ${dias.map((d, i) => `
+        <div class="grafico-columna" tabindex="0" data-tooltip="${escapar(d.completa)}: ${d.cantidad} ${d.cantidad === 1 ? 'reserva' : 'reservas'} · ${d.personas} personas">
+          <span class="grafico-valor"${i === indiceMaximo ? '' : ' hidden'}>${d.cantidad}</span>
+          <span class="grafico-barra${d.cantidad === 0 ? ' vacia' : ''}" data-alto="${Math.round((d.cantidad / maximo) * 100)}"></span>
+        </div>`).join('')}
+    </div>
+    <div class="grafico-eje">
+      ${dias.map((d, i) => `<span class="${i === 0 ? 'hoy' : ''}">${escapar(d.etiqueta)}</span>`).join('')}
+    </div>
+    <div class="grafico-tooltip" id="grafico-tooltip" role="tooltip" hidden></div>`;
+  // El alto se asigna desde JS (la CSP no permite atributos style en el HTML)
+  grafico.querySelectorAll('.grafico-barra').forEach((barra) => barra.style.setProperty('--alto', `${barra.dataset.alto}%`));
+
+  $('dash-grafico-tabla').innerHTML = `<caption>Reservas confirmadas por día</caption>
+    <tr><th scope="col">Día</th><th scope="col">Reservas</th><th scope="col">Personas</th></tr>
+    ${dias.map((d) => `<tr><td>${escapar(d.completa)}</td><td>${d.cantidad}</td><td>${d.personas}</td></tr>`).join('')}`;
+}
+
+function mostrarTooltipGrafico(columna) {
+  const tooltip = $('grafico-tooltip');
+  if (!tooltip) return;
+  tooltip.textContent = columna.dataset.tooltip;
+  tooltip.hidden = false;
+  const caja = $('dash-grafico').getBoundingClientRect();
+  const barra = columna.getBoundingClientRect();
+  const izquierda = Math.min(Math.max(barra.left - caja.left + barra.width / 2, 80), caja.width - 80);
+  tooltip.style.left = `${izquierda}px`;
+}
+
+function renderRecientes(reservas) {
+  const lista = $('dash-recientes');
+  lista.innerHTML = reservas.length === 0
+    ? '<li class="vacio-panel">Aún no hay reservas.</li>'
+    : reservas.map((r) => `
+      <li class="item-reciente">
+        <span class="avatar" aria-hidden="true">${escapar(r.cliente_nombre.charAt(0).toUpperCase())}</span>
+        <div>
+          <strong>${escapar(r.cliente_nombre)}</strong>
+          <span>${escapar(r.mesas?.nombre)} · ${formatoFecha(r.fecha)} · ${hora12(r.hora_inicio)} · ${r.num_personas} pers.</span>
+        </div>
+        <div class="item-reciente-lado">
+          ${chipEstado(r.estado)}
+          <time datetime="${escapar(r.creado_en)}">${haceCuanto(r.creado_en)}</time>
+        </div>
+      </li>`).join('');
+}
+
+async function cambiarEstadoDesdeDashboard(boton) {
+  const nuevo = boton.dataset.reservaEstado;
+  if (nuevo === 'cancelada') {
+    const seguro = await confirmar({
+      titulo: '¿Cancelar esta reserva?',
+      mensaje: 'El turno quedará libre para otros clientes. El cliente no recibe aviso automático: si dejó celular, escríbele.',
+      textoConfirmar: 'Sí, cancelar reserva',
+      textoCancelar: 'Volver',
+      peligro: true
+    });
+    if (!seguro) return;
+  }
+  const { error } = await conCarga(boton, nuevo === 'completada' ? 'Guardando…' : '',
+    () => escribir(db.from('reservas').update({ estado: nuevo }).eq('id', Number(boton.dataset.id))));
+  if (error) {
+    avisar(errorAmigable(error, 'No se pudo cambiar el estado.'), true);
+    return;
+  }
+  avisar(nuevo === 'completada' ? 'Listo: el cliente llegó y la reserva quedó completada.' : 'Reserva cancelada. El turno quedó libre.');
+  await cargarDashboard();
+}
+
+/* ----------------------------------------------------------
+   Notificaciones (con tiempo real)
+   ---------------------------------------------------------- */
+
+const TIPOS_NOTIFICACION = {
+  nueva: { titulo: 'Nueva reserva', icono: '<path d="M12 5v14M5 12h14"/>' },
+  modificada: { titulo: 'Reserva modificada', icono: '<path d="M4 20h4L19 9l-4-4L4 16z"/>' },
+  cancelada: { titulo: 'Reserva cancelada', icono: '<path d="M6 6l12 12M18 6L6 18"/>' }
+};
+
+function textoReserva(d) {
+  return `${formatoFecha(d.fecha)} · ${hora12(d.hora_inicio)} · ${d.num_personas} pers.`;
+}
+
+async function cargarNotificaciones() {
+  const { data, error } = await db.from('notificaciones').select('*').order('creado_en', { ascending: false }).limit(100);
+  if (error) {
+    $('lista-notificaciones').innerHTML = '<li class="vacio-panel">No se pudieron cargar las notificaciones.</li>';
+    return;
+  }
+  estado.notificaciones = data;
+  renderNotificaciones();
+}
+
+function renderNotificaciones() {
+  const sinLeer = estado.notificaciones.filter((n) => !n.leida).length;
+  $('resumen-notificaciones').textContent = sinLeer
+    ? `${sinLeer} sin leer · reservas nuevas, modificadas o canceladas por los clientes.`
+    : 'Estás al día · reservas nuevas, modificadas o canceladas por los clientes.';
+  $('marcar-todas').disabled = sinLeer === 0;
+
+  const todas = estado.filtroNoti === 'sin-leer' ? estado.notificaciones.filter((n) => !n.leida) : estado.notificaciones;
+  const pagina = paginar(todas, estado.paginas.notificaciones);
+  estado.paginas.notificaciones = pagina.pagina;
+  renderPaginacion($('pag-notificaciones'), pagina, (n) => {
+    estado.paginas.notificaciones = n;
+    renderNotificaciones();
+    $('titulo-notificaciones').scrollIntoView({ block: 'start' });
+  }, ['notificación', 'notificaciones']);
+  const visibles = pagina.items;
+  $('lista-notificaciones').innerHTML = todas.length === 0
+    ? `<li class="vacio-panel">${estado.filtroNoti === 'sin-leer' ? 'No tienes notificaciones sin leer.' : 'Aún no hay notificaciones.'}</li>`
+    : visibles.map((n) => {
+      const tipo = TIPOS_NOTIFICACION[n.tipo];
+      const d = n.datos;
+      return `
+        <li class="notificacion ${n.tipo}${n.leida ? ' leida' : ''}">
+          <span class="notificacion-icono" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${tipo.icono}</svg>
+          </span>
+          <div class="notificacion-cuerpo">
+            <p class="notificacion-titulo">
+              ${n.leida ? '' : '<span class="punto-no-leida"><span class="solo-lectores">Sin leer: </span></span>'}
+              <strong>${tipo.titulo}</strong> · ${escapar(d.cliente_nombre)}
+            </p>
+            <p>${escapar(d.mesa)} · ${textoReserva(d)} · código <code class="codigo">${escapar(d.codigo)}</code></p>
+            ${d.antes ? `<p class="notificacion-antes">Antes: ${textoReserva(d.antes)}</p>` : ''}
+            <time datetime="${escapar(n.creado_en)}">${haceCuanto(n.creado_en)}</time>
+          </div>
+          <div class="notificacion-acciones">
+            <button type="button" class="btn btn-secundario btn-pequeno" data-ver-fecha="${escapar(d.fecha)}" data-noti="${n.id}">Ver en reservas</button>
+            ${n.leida ? '' : `<button type="button" class="enlace-boton" data-leer="${n.id}">Marcar como leída</button>`}
+          </div>
+        </li>`;
+    }).join('');
+}
+
+async function actualizarContador() {
+  const { count, error } = await db.from('notificaciones').select('id', { count: 'exact', head: true }).eq('leida', false);
+  if (error) return;
+  const texto = count > 99 ? '99+' : String(count);
+  ['contador-campana', 'contador-menu'].forEach((id) => {
+    $(id).textContent = texto;
+    $(id).hidden = count === 0;
+  });
+  $('campana').setAttribute('aria-label', count ? `Notificaciones, ${count} sin leer` : 'Notificaciones');
+  document.title = `${count ? `(${texto}) ` : ''}Konys Pizza – Panel de administración`;
+}
+
+async function marcarLeidas(ids) {
+  if (ids.length === 0) return;
+  const { error } = await escribir(db.from('notificaciones').update({ leida: true }).in('id', ids));
+  if (error) {
+    avisar(errorAmigable(error, 'No se pudo marcar como leída.'), true);
+    return;
+  }
+  estado.notificaciones.forEach((n) => { if (ids.includes(n.id)) n.leida = true; });
+  renderNotificaciones();
+  actualizarContador();
+}
+
+async function verEnReservas(fecha) {
+  $('filtro-fecha').value = fecha;
+  $('filtro-fecha').dataset.iniciado = 'si';
+  $('filtro-mesa').value = '';
+  $('filtro-estado').value = '';
+  await cambiarSeccion('reservas');
+}
+
+// Tiempo real: llega una notificación nueva sin recargar. Además, cada minuto se
+// revisa el contador por si la conexión en tiempo real se interrumpe.
+function iniciarNotificaciones() {
+  detenerNotificaciones();
+  estado.canal = db.channel('notificaciones-admin')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones' }, ({ new: nueva }) => {
+      estado.notificaciones.unshift(nueva);
+      actualizarContador();
+      avisar(`${TIPOS_NOTIFICACION[nueva.tipo].titulo}: ${nueva.datos.cliente_nombre}, ${nueva.datos.mesa}`);
+      if (estado.seccion === 'notificaciones') renderNotificaciones();
+      if (estado.seccion === 'inicio') cargarDashboard();
+    })
+    .subscribe();
+  estado.intervalo = setInterval(() => {
+    actualizarContador();
+    if (estado.seccion === 'inicio' && !document.hidden) cargarDashboard();
+  }, 60000);
+  actualizarContador();
+}
+
+function detenerNotificaciones() {
+  if (estado.canal) db.removeChannel(estado.canal);
+  clearInterval(estado.intervalo);
+  estado.canal = null;
 }
 
 /* ----------------------------------------------------------
@@ -633,6 +1044,62 @@ function registrarEventos() {
     const boton = e.target.closest('[data-seccion]');
     if (boton) cambiarSeccion(boton.dataset.seccion);
   });
+  // Campana y enlaces "Ver …" que llevan a otra sección
+  document.addEventListener('click', (e) => {
+    const enlace = e.target.closest('[data-seccion-ir]');
+    if (enlace) cambiarSeccion(enlace.dataset.seccionIr);
+  });
+
+  // Dashboard
+  $('dash-refrescar').addEventListener('click', async (e) => {
+    await conCarga(e.currentTarget, 'Actualizando…', cargarDashboard);
+    notificar('Resumen actualizado.', 'info');
+  });
+  $('dash-hoy').addEventListener('click', (e) => {
+    const boton = e.target.closest('[data-reserva-estado]');
+    if (boton) cambiarEstadoDesdeDashboard(boton);
+  });
+  document.querySelector('[data-ir-reservas="hoy"]').addEventListener('click', () => verEnReservas(hoyColombia()));
+  const grafico = $('dash-grafico');
+  ['mouseover', 'focusin'].forEach((tipo) => grafico.addEventListener(tipo, (e) => {
+    const columna = e.target.closest('.grafico-columna');
+    if (columna) mostrarTooltipGrafico(columna);
+  }));
+  ['mouseleave', 'focusout'].forEach((tipo) => grafico.addEventListener(tipo, () => {
+    if ($('grafico-tooltip')) $('grafico-tooltip').hidden = true;
+  }));
+
+  // Notificaciones
+  document.querySelectorAll('[data-filtro-noti]').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      estado.filtroNoti = boton.dataset.filtroNoti;
+      estado.paginas.notificaciones = 1;
+      document.querySelectorAll('[data-filtro-noti]').forEach((b) => {
+        b.classList.toggle('activo', b === boton);
+        b.setAttribute('aria-pressed', b === boton);
+      });
+      renderNotificaciones();
+    });
+  });
+  $('marcar-todas').addEventListener('click', async (e) => {
+    const ids = estado.notificaciones.filter((n) => !n.leida).map((n) => n.id);
+    await conCarga(e.currentTarget, 'Marcando…', () => marcarLeidas(ids));
+    notificar(`${ids.length} ${ids.length === 1 ? 'notificación marcada' : 'notificaciones marcadas'} como leídas.`);
+  });
+  $('lista-notificaciones').addEventListener('click', async (e) => {
+    const leer = e.target.closest('[data-leer]');
+    if (leer) {
+      await conCarga(leer, 'Marcando…', () => marcarLeidas([Number(leer.dataset.leer)]));
+      return;
+    }
+    const ver = e.target.closest('[data-ver-fecha]');
+    if (ver) {
+      const noti = estado.notificaciones.find((n) => n.id === Number(ver.dataset.noti));
+      if (noti && !noti.leida) marcarLeidas([noti.id]);
+      await conCarga(ver, 'Abriendo…', () => verEnReservas(ver.dataset.verFecha));
+      notificar(`Reservas del ${formatoFecha(ver.dataset.verFecha)}.`, 'info');
+    }
+  });
 
   // Mesas
   $('nueva-mesa').addEventListener('click', () => abrirDialogoMesa());
@@ -641,9 +1108,9 @@ function registrarEventos() {
     const boton = e.target.closest('[data-accion]');
     if (!boton) return;
     const id = Number(boton.dataset.id);
-    if (boton.dataset.accion === 'alternar') alternarMesa(id);
+    if (boton.dataset.accion === 'alternar') alternarMesa(id, boton);
     if (boton.dataset.accion === 'editar') abrirDialogoMesa(estado.mesas.find((m) => m.id === id));
-    if (boton.dataset.accion === 'borrar') borrarMesa(id);
+    if (boton.dataset.accion === 'borrar') borrarMesa(id, boton);
   });
 
   // Horarios
@@ -654,11 +1121,12 @@ function registrarEventos() {
   // Reservas
   ['filtro-fecha', 'filtro-mesa', 'filtro-estado'].forEach((id) => $(id).addEventListener('change', cargarReservas));
   $('filtros-reservas').addEventListener('submit', (e) => e.preventDefault());
-  $('limpiar-filtros').addEventListener('click', () => {
+  $('limpiar-filtros').addEventListener('click', async (e) => {
     $('filtro-fecha').value = '';
     $('filtro-mesa').value = '';
     $('filtro-estado').value = '';
-    cargarReservas();
+    await conCarga(e.currentTarget, 'Cargando…', cargarReservas);
+    notificar('Mostrando todas las reservas.', 'info');
   });
   $('tabla-reservas').addEventListener('change', (e) => {
     if (e.target.matches('select[data-reserva]')) cambiarEstadoReserva(e.target);
@@ -686,9 +1154,9 @@ function registrarEventos() {
     const boton = e.target.closest('[data-accion]');
     if (!boton) return;
     const id = Number(boton.dataset.id);
-    if (boton.dataset.accion === 'alternar') alternarPlato(id);
+    if (boton.dataset.accion === 'alternar') alternarPlato(id, boton);
     if (boton.dataset.accion === 'editar') abrirDialogoPlato(estado.platos.find((p) => p.id === id));
-    if (boton.dataset.accion === 'borrar') borrarPlato(id);
+    if (boton.dataset.accion === 'borrar') borrarPlato(id, boton);
   });
 
   // Botones "Cancelar" de los diálogos

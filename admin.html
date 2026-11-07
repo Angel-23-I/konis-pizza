@@ -62,9 +62,20 @@
       <div class="sidebar-marca">
         <img src="imgs/logo.jpg" alt="" class="logo-imagen" width="38" height="38">
         <span><strong>KONYS PIZZA</strong><small>Administración</small></span>
+        <button type="button" class="campana" id="campana" data-seccion-ir="notificaciones" aria-label="Notificaciones">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="contador-notificaciones" id="contador-campana" hidden>0</span>
+        </button>
       </div>
       <nav class="sidebar-nav" aria-label="Secciones del panel">
-        <button type="button" data-seccion="mesas" aria-current="page">
+        <button type="button" data-seccion="inicio" aria-current="page">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Inicio
+        </button>
+        <button type="button" data-seccion="notificaciones">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Notificaciones
+          <span class="contador-notificaciones" id="contador-menu" hidden>0</span>
+        </button>
+        <button type="button" data-seccion="mesas">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="6" width="16" height="10" rx="2"/><path d="M8 16v4M16 16v4"/></svg>Mesas
         </button>
         <button type="button" data-seccion="horarios">
@@ -89,8 +100,106 @@
     </aside>
 
     <main class="panel-contenido">
+      <!-- Dashboard inicial: resumen del día -->
+      <section id="seccion-inicio" class="seccion-panel" aria-labelledby="titulo-inicio">
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-inicio">Resumen del día</h1>
+            <p class="texto-suave" id="dash-fecha"></p>
+          </div>
+          <div class="acciones-encabezado">
+            <span class="texto-suave dash-actualizado" id="dash-actualizado"></span>
+            <button type="button" class="btn btn-secundario btn-pequeno" id="dash-refrescar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="kpis" id="dash-kpis">
+          <article class="kpi">
+            <span class="kpi-etiqueta">Reservas hoy</span>
+            <strong class="kpi-valor" id="kpi-hoy">–</strong>
+            <span class="kpi-detalle" id="kpi-hoy-detalle"></span>
+          </article>
+          <article class="kpi">
+            <span class="kpi-etiqueta">Personas esperadas</span>
+            <strong class="kpi-valor" id="kpi-personas">–</strong>
+            <span class="kpi-detalle">hoy, reservas confirmadas</span>
+          </article>
+          <article class="kpi">
+            <span class="kpi-etiqueta">Ocupación de hoy</span>
+            <strong class="kpi-valor" id="kpi-ocupacion">–</strong>
+            <span class="kpi-barra" aria-hidden="true"><span id="kpi-ocupacion-barra"></span></span>
+            <span class="kpi-detalle" id="kpi-ocupacion-detalle"></span>
+          </article>
+          <article class="kpi">
+            <span class="kpi-etiqueta">Próxima reserva</span>
+            <strong class="kpi-valor" id="kpi-proxima">–</strong>
+            <span class="kpi-detalle" id="kpi-proxima-detalle"></span>
+          </article>
+          <article class="kpi">
+            <span class="kpi-etiqueta">Próximos 7 días</span>
+            <strong class="kpi-valor" id="kpi-semana">–</strong>
+            <span class="kpi-detalle" id="kpi-semana-detalle"></span>
+          </article>
+          <article class="kpi">
+            <span class="kpi-etiqueta">Cancelaciones</span>
+            <strong class="kpi-valor" id="kpi-canceladas">–</strong>
+            <span class="kpi-detalle">últimos 7 días</span>
+          </article>
+        </div>
+
+        <div class="dash-grilla">
+          <article class="tarjeta-panel dash-hoy">
+            <div class="tarjeta-panel-encabezado">
+              <h2>Reservas de hoy</h2>
+              <button type="button" class="enlace-boton" data-ir-reservas="hoy">Ver todas →</button>
+            </div>
+            <ol class="lista-hoy" id="dash-hoy"></ol>
+            <nav class="paginacion" id="pag-hoy" aria-label="Páginas de reservas de hoy"></nav>
+          </article>
+
+          <article class="tarjeta-panel dash-grafico">
+            <div class="tarjeta-panel-encabezado">
+              <h2>Reservas por día</h2>
+              <span class="texto-suave">próximos 7 días · confirmadas</span>
+            </div>
+            <div class="grafico" id="dash-grafico" role="img"></div>
+            <table class="solo-lectores" id="dash-grafico-tabla"></table>
+          </article>
+
+          <article class="tarjeta-panel dash-recientes">
+            <div class="tarjeta-panel-encabezado">
+              <h2>Reservas recientes</h2>
+              <button type="button" class="enlace-boton" data-seccion-ir="notificaciones">Ver actividad →</button>
+            </div>
+            <ul class="lista-recientes" id="dash-recientes"></ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- Notificaciones: reservas nuevas, modificadas o canceladas por clientes -->
+      <section id="seccion-notificaciones" class="seccion-panel" aria-labelledby="titulo-notificaciones" hidden>
+        <div class="panel-encabezado">
+          <div>
+            <h1 id="titulo-notificaciones">Notificaciones</h1>
+            <p class="texto-suave" id="resumen-notificaciones">Reservas nuevas, modificadas o canceladas por los clientes.</p>
+          </div>
+          <div class="acciones-encabezado">
+            <div class="filtro" role="group" aria-label="Filtrar notificaciones">
+              <button type="button" class="filtro-boton activo" data-filtro-noti="todas" aria-pressed="true">Todas</button>
+              <button type="button" class="filtro-boton" data-filtro-noti="sin-leer" aria-pressed="false">Sin leer</button>
+            </div>
+            <button type="button" class="btn btn-secundario btn-pequeno" id="marcar-todas">Marcar todas como leídas</button>
+          </div>
+        </div>
+        <ul class="lista-notificaciones" id="lista-notificaciones" aria-live="polite"></ul>
+        <nav class="paginacion" id="pag-notificaciones" aria-label="Páginas de notificaciones"></nav>
+      </section>
+
       <!-- RF-09, RF-10, RF-13: mesas -->
-      <section id="seccion-mesas" class="seccion-panel" aria-labelledby="titulo-mesas">
+      <section id="seccion-mesas" class="seccion-panel" aria-labelledby="titulo-mesas" hidden>
         <div class="panel-encabezado">
           <div>
             <h1 id="titulo-mesas">Mesas</h1>
@@ -103,6 +212,7 @@
             <thead><tr><th scope="col">Mesa</th><th scope="col">Zona</th><th scope="col">Capacidad</th><th scope="col">Estado</th><th scope="col" class="derecha">Acciones</th></tr></thead>
             <tbody id="tabla-mesas"></tbody>
           </table>
+          <nav class="paginacion" id="pag-mesas" aria-label="Páginas de mesas"></nav>
         </div>
       </section>
 
@@ -164,6 +274,7 @@
             <thead><tr><th scope="col">Cliente</th><th scope="col">Código</th><th scope="col">Mesa</th><th scope="col">Fecha</th><th scope="col">Hora</th><th scope="col">Personas</th><th scope="col">Contacto</th><th scope="col">Estado</th></tr></thead>
             <tbody id="tabla-reservas"></tbody>
           </table>
+          <nav class="paginacion" id="pag-reservas" aria-label="Páginas de reservas"></nav>
         </div>
       </section>
 
@@ -181,6 +292,7 @@
             <thead><tr><th scope="col">Plato</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Visible</th><th scope="col" class="derecha">Acciones</th></tr></thead>
             <tbody id="tabla-platos"></tbody>
           </table>
+          <nav class="paginacion" id="pag-platos" aria-label="Páginas de platos"></nav>
         </div>
       </section>
     </main>
@@ -247,12 +359,11 @@
     </form>
   </dialog>
 
-  <!-- Mensajes breves de confirmación o error -->
-  <div id="aviso-flotante" class="aviso-flotante" role="status" aria-live="polite" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
           integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
   <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/admin.js"></script>
 </body>

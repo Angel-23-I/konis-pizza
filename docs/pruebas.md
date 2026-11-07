@@ -10,7 +10,7 @@ Etapa 5 del plan de desarrollo: pruebas de punta a punta, validaciones, segurida
 | Navegador | Chrome 152 (Chromium) |
 | Datos | 8 mesas, 14 horarios (2 jornadas × 7 días, turnos de 60 min), 45 platos de la carta real |
 
-**Resultado general: 125 de 125 casos aprobados.**
+**Resultado general: 157 de 157 casos aprobados.**
 
 | Grupo | Casos | Aprobados |
 |---|---|---|
@@ -23,6 +23,10 @@ Etapa 5 del plan de desarrollo: pruebas de punta a punta, validaciones, segurida
 | Reserva por pasos y validación en vivo (P) | 7 | 7 |
 | Gestión de reservas en la base (GR) | 18 | 18 |
 | Mi reserva en la interfaz (M) | 11 | 11 |
+| Notificaciones en la base (NT) | 8 | 8 |
+| Dashboard y notificaciones del panel (DA) | 6 | 6 |
+| Confirmaciones propias y retroalimentación (FB) | 8 | 8 |
+| Paginación y diseño del panel (PG) | 10 | 10 |
 
 ## Cómo se ejecutaron
 
@@ -213,6 +217,68 @@ Cada reserva tiene un código de 6 caracteres (sin letras ni números que se con
 | M-10 | "Cancelar reserva" | Pide confirmación, queda cancelada y se ocultan los botones | Estado "Cancelada", botones ocultos | ✅ |
 | M-11 | Buscar de nuevo la cancelada | Ya no aparece como activa | "No encontramos una reserva activa…" | ✅ |
 
+## 9. Notificaciones, dashboard y retroalimentación de acciones
+
+Un trigger en `reservas` registra cada reserva **nueva**, **modificada** o **cancelada por un cliente** en la tabla `notificaciones`. Los cambios que hace el propio administrador no se notifican. El panel recibe las notificaciones en tiempo real (Supabase Realtime) y además revisa el contador cada minuto.
+
+### Notificaciones en la base (dentro de una transacción que se deshace)
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| NT-01 | El público lee la tabla `notificaciones` | No ve nada | 0 filas | ✅ |
+| NT-02 | Un cliente crea, modifica y cancela una reserva | Se generan 3 notificaciones con sus datos; la modificada guarda el "antes" | nueva 18:00 2p · modificada 20:00 3p (antes 18:00 2p) · cancelada | ✅ |
+| NT-03 | El administrador lee las notificaciones | Las ve todas | 3 notificaciones | ✅ |
+| NT-04 | El administrador cancela una reserva | No se genera notificación | 0 nuevas | ✅ |
+| NT-05 | El administrador marca como leídas | Se guarda | 3 filas actualizadas | ✅ |
+| NT-06 | Usuario con sesión pero no administrador | No ve nada | 0 filas | ✅ |
+| NT-07 | Tabla publicada para tiempo real | Incluida en `supabase_realtime` | Sí | ✅ |
+| NT-08 | Cancelar desde "Mi reserva" en la página | Queda la notificación "cancelada" | Notificaciones "nueva" y "cancelada" registradas | ✅ |
+
+### Dashboard y notificaciones del panel
+
+Sin sesión de administrador las reglas RLS ocultan reservas y notificaciones, así que el diseño se probó con datos de ejemplo cargados solo en el navegador (sin guardarlos).
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| DA-01 | Indicadores del día | Reservas hoy, personas, ocupación, próxima reserva, próximos 7 días y cancelaciones | Los 6 calculados (p. ej. 3 reservas, 13 personas, próxima 6:00 p. m.) | ✅ |
+| DA-02 | Lista "Reservas de hoy" | Ordenada por hora, con acciones "Llegó" y cancelar; las ya pasadas resaltadas | 5 reservas; acciones solo en las confirmadas; completadas y canceladas con su etiqueta | ✅ |
+| DA-03 | Gráfico "Reservas por día" | Barras proporcionales, valor en el máximo, tooltip y tabla para lectores de pantalla | Alturas 100 % / 33 % / 0 %…; color `#D9731A` validado (luminosidad, saturación y contraste ≥ 3:1) | ✅ |
+| DA-04 | "Reservas recientes" | Últimas creadas, con estado y hace cuánto | 6 reservas con "hace X minutos" | ✅ |
+| DA-05 | Página de notificaciones | Ícono y color por tipo, punto de "sin leer", "Antes" en las modificadas y contador | 2 sin leer, 1 leída; resumen "2 sin leer" | ✅ |
+| DA-06 | Panel en celular (375 px) | Sin scroll horizontal, indicadores en 2 columnas, campana visible | Correcto | ✅ |
+
+### Confirmaciones propias y retroalimentación de los botones
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| FB-01 | Borrar una mesa | Diálogo propio (no el del navegador) con explicación; foco en "Cancelar" | "¿Borrar Mesa 1?", botones "Cancelar" / "Sí, borrar mesa", foco en "Cancelar" | ✅ |
+| FB-02 | "Cancelar" o tecla Esc en el diálogo | No se borra nada | Diálogo cerrado; 8 mesas siguen | ✅ |
+| FB-03 | Aceptar el borrado | El botón muestra el indicador de carga y se deshabilita | `aria-busy=true`, deshabilitado, indicador visible; luego vuelve a su ícono | ✅ |
+| FB-04 | Resultado de la acción | Mensaje flotante de éxito o error | "Tu sesión no tiene permisos para este cambio." (sin sesión, como se esperaba) | ✅ |
+| FB-05 | Interruptor Activa/Inactiva | Estado de carga y mensaje | `aria-busy=true` y mensaje | ✅ |
+| FB-06 | "Buscar mi reserva" | Indicador "Buscando…" y mensaje al encontrarla | "Buscando…" y "Encontramos tu reserva." | ✅ |
+| FB-07 | "Cancelar reserva" en Mi reserva | Diálogo propio con fecha y mesa; "Cancelando…"; mensaje final | Foco en "Mantener reserva"; "Tu reserva quedó cancelada. ¡Te esperamos en otra ocasión!" | ✅ |
+| FB-08 | Diálogos nativos del navegador | Ninguno en el código | 0 usos de `confirm()` | ✅ |
+
+> El inicio de sesión real del administrador y la llegada de una notificación en tiempo real con la sesión abierta los verifica el administrador con su cuenta.
+
+## 10. Paginación y diseño del panel
+
+Todas las tablas y listas del panel muestran 10 filas por página: mesas, reservas, carta, notificaciones y reservas de hoy.
+
+| ID | Caso | Resultado esperado | Resultado obtenido | Estado |
+|---|---|---|---|---|
+| PG-01 | Carta del panel (45 platos reales) | 10 filas y conteo | "Mostrando 1–10 de 45 platos"; "Anterior" deshabilitado | ✅ |
+| PG-02 | Página siguiente | Filas 11–20 | "Mostrando 11–20 de 45 platos", página 2 marcada | ✅ |
+| PG-03 | Última página | 5 filas; "Siguiente" deshabilitado | "Mostrando 41–45 de 45 platos" | ✅ |
+| PG-04 | Tabla con menos de 10 filas (8 mesas) | Sin botones, solo el conteo | "8 mesas", 0 botones | ✅ |
+| PG-05 | Un solo elemento | Texto en singular | "1 reserva hoy" | ✅ |
+| PG-06 | Reservas de hoy con 14 reservas | 10 por página | "Mostrando 1–10 de 14 reservas hoy" | ✅ |
+| PG-07 | Fila de indicadores del dashboard | Ocupa todo el ancho | 6 columnas, 1021 de 1021 px a 1366 px; 3 en tablet y 2 en celular | ✅ |
+| PG-08 | "Reservas de hoy" con 1 reserva | La tarjeta crece según sus filas | 200 px de alto (antes ocupaba toda la columna) | ✅ |
+| PG-09 | Tabla de la carta en escritorio | Sin scroll lateral | La descripción parte línea; la tabla cabe | ✅ |
+| PG-10 | Tabla en celular (375 px) | Scroll lateral solo dentro de la tabla; paginación fija y visible | Página sin scroll horizontal; paginación visible tras desplazar la tabla | ✅ |
+
 ---
 
 ## Errores encontrados y corregidos durante el desarrollo
@@ -227,6 +293,10 @@ Cada reserva tiene un código de 6 caracteres (sin letras ni números que se con
 | 6 | Un celular pegado como `+57 300…` quedaba mal | El filtro conservaba el 57 del indicativo | Se quita el 57 cuando sobran dígitos |
 | 7 | Vercel publicaría `package.json`, `supabase/` y `scripts/` | `outputDirectory: "."` | El build copia a `dist/` solo HTML, CSS, JS e imágenes |
 | 8 | El aviso del modo edición mostraba "p. m.." | La hora ya termina en punto | Se reescribió la frase |
+| 9 | Las barras del gráfico se habrían bloqueado | La CSP no permite atributos `style` en el HTML | El alto se asigna con `style.setProperty` desde JavaScript |
+| 10 | El azul petróleo de la marca no servía para las barras | El validador de color lo marcó oscuro y casi gris | Se usó el naranja `#D9731A`, que pasa las comprobaciones |
+| 11 | La tabla de la carta se salía a lo ancho | `white-space: nowrap` de los encabezados también afectaba la primera celda de cada fila | Solo los encabezados de columna van en una línea |
+| 12 | Texto naranja con poco contraste (4,1:1) sobre fondo durazno | Tono `#B35C0A` | `#9A4D08` (5,3:1), detectado por la herramienta de impeccable |
 
 ## Pendiente por probar
 

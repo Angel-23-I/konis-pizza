@@ -14,6 +14,8 @@ Hoy las reservas se toman a mano por llamada, WhatsApp o Instagram, lo que causa
 - Consultar la carta digital por categorías.
 
 **Panel de administración** (`/admin`, protegido con contraseña)
+- Dashboard de inicio: reservas y personas de hoy, ocupación, próxima reserva, gráfico de los próximos 7 días y reservas recientes.
+- Notificaciones en tiempo real (con campana y contador) cuando un cliente crea, modifica o cancela una reserva.
 - Registrar mesas y activarlas o desactivarlas.
 - Definir el horario de atención por día y la duración de cada reserva.
 - Consultar las reservas filtrando por fecha y por mesa.
@@ -46,6 +48,7 @@ konys-reservas-app/
 │   └── styles.css
 ├── js/
 │   ├── supabase.js         # Conexión con Supabase
+│   ├── ui.js               # Diálogo de confirmación, mensajes y botones con carga
 │   ├── cliente.js          # Lógica del módulo cliente
 │   └── admin.js            # Lógica del módulo administrador
 ├── scripts/
@@ -54,6 +57,7 @@ konys-reservas-app/
 │   ├── schema.sql          # Tablas, funciones y reglas de seguridad (RLS)
 │   ├── validaciones.sql    # Formatos permitidos y límites anti-abuso
 │   ├── gestion_reservas.sql # Código de reserva; consultar, modificar y cancelar
+│   ├── notificaciones.sql  # Notificaciones automáticas y en tiempo real
 │   ├── seed.sql            # Mesas, horarios y reservas de prueba
 │   └── carta.sql           # Carta real de Konys (45 platos)
 ├── docs/
@@ -74,7 +78,7 @@ Requisitos: [Node.js](https://nodejs.org) 18 o superior y un proyecto creado en 
    git clone https://github.com/Angel-23-I/konis-pizza.git
    cd konis-pizza
    ```
-2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/gestion_reservas.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
+2. En el *SQL Editor* de Supabase ejecuta, en este orden, `supabase/schema.sql`, `supabase/validaciones.sql`, `supabase/gestion_reservas.sql`, `supabase/notificaciones.sql`, `supabase/seed.sql` y `supabase/carta.sql`.
 3. Copia `.env.example` como `.env` y escribe la URL y la clave `anon` de tu proyecto de Supabase (*Project Settings → API*).
 4. Genera la configuración y abre un servidor local:
    ```bash
