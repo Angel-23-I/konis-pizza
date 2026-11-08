@@ -347,8 +347,8 @@
         <small id="ayuda-plato-desc" class="ayuda"><span id="contador-desc">0</span>/200 caracteres.</small>
       </label>
       <label class="campo">Precio (COP)
-        <input type="number" id="plato-precio" min="0" max="1000000" step="100" inputmode="numeric" aria-describedby="ayuda-plato-precio" required>
-        <small id="ayuda-plato-precio" class="ayuda">En pesos, sin puntos. Máximo $1.000.000.</small>
+        <input type="text" id="plato-precio" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="$0" aria-describedby="ayuda-plato-precio" required>
+        <small id="ayuda-plato-precio" class="ayuda">Solo números; el signo y los puntos se agregan solos. Máximo $1.000.000.</small>
       </label>
       <label class="campo-check"><input type="checkbox" id="plato-disponible" checked> Visible en la carta</label>
       <p id="plato-error" class="error" role="alert" hidden></p>

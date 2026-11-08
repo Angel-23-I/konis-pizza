@@ -65,6 +65,35 @@ function aMinutos(hora) {
   return h * 60 + m;
 }
 
+// Campo de precio: guarda solo dígitos y muestra "$25.000"
+function digitosPrecio(texto) {
+  return String(texto).replace(/\D/g, '');
+}
+
+function textoPrecio(digitos) {
+  if (digitos === '') return '';
+  return '$' + digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function formatearCampoPrecio(campo) {
+  const cursor = campo.selectionStart ?? campo.value.length;
+  const digitosAntes = digitosPrecio(campo.value.slice(0, cursor)).length;
+  // Máximo 7 dígitos (1.000.000) y sin ceros a la izquierda
+  let digitos = digitosPrecio(campo.value).replace(/^0+(?=\d)/, '').slice(0, 7);
+  // Si el número pasa del máximo, se ignora lo último que se escribió
+  const excede = Number(digitos) > PRECIO_MAXIMO;
+  if (excede) digitos = campo.dataset.previo ?? '';
+  campo.value = textoPrecio(digitos);
+  campo.dataset.previo = digitos;
+  // Deja el cursor después del mismo dígito en que estaba
+  let posicion = campo.value ? 1 : 0;
+  for (let vistos = 0; posicion < campo.value.length && vistos < digitosAntes; posicion++) {
+    if (/\d/.test(campo.value[posicion])) vistos++;
+  }
+  if (excede) posicion = campo.value.length;
+  if (document.activeElement === campo) campo.setSelectionRange(posicion, posicion);
+}
+
 function formatoPrecio(valor) {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
 }
@@ -602,7 +631,8 @@ function abrirDialogoPlato(plato = null) {
   $('plato-nombre').value = plato?.nombre ?? '';
   $('plato-categoria').value = plato?.categoria ?? 'pizzas';
   $('plato-descripcion').value = plato?.descripcion ?? '';
-  $('plato-precio').value = plato?.precio ?? '';
+  $('plato-precio').value = textoPrecio(digitosPrecio(plato?.precio ?? ''));
+  $('plato-precio').dataset.previo = digitosPrecio(plato?.precio ?? '');
   $('plato-disponible').checked = plato?.disponible ?? true;
   $('contador-desc').textContent = $('plato-descripcion').value.length;
   $('plato-error').hidden = true;
@@ -616,7 +646,7 @@ async function guardarPlato(evento) {
     nombre: $('plato-nombre').value.trim().replace(/\s+/g, ' '),
     categoria: $('plato-categoria').value,
     descripcion: $('plato-descripcion').value.trim().replace(/\s+/g, ' ') || null,
-    precio: Number($('plato-precio').value),
+    precio: Number(digitosPrecio($('plato-precio').value)),
     disponible: $('plato-disponible').checked
   };
 
@@ -636,8 +666,8 @@ async function guardarPlato(evento) {
     error.hidden = false;
     return;
   }
-  if ($('plato-precio').value === '' || !Number.isInteger(datos.precio) || datos.precio < 0 || datos.precio > PRECIO_MAXIMO) {
-    error.textContent = 'El precio debe ser un número entero en pesos, sin puntos, hasta $1.000.000.';
+  if (digitosPrecio($('plato-precio').value) === '' || !Number.isInteger(datos.precio) || datos.precio < 0 || datos.precio > PRECIO_MAXIMO) {
+    error.textContent = 'Escribe el precio en pesos, hasta $1.000.000.';
     error.hidden = false;
     return;
   }
@@ -1162,8 +1192,9 @@ function registrarEventos() {
   $('plato-descripcion').addEventListener('input', () => {
     $('contador-desc').textContent = $('plato-descripcion').value.length;
   });
+  $('plato-precio').addEventListener('input', () => formatearCampoPrecio($('plato-precio')));
   // Campos numéricos: solo dígitos (evita "e", "-", "." y pegar texto)
-  ['plato-precio', 'mesa-capacidad'].forEach((id) => {
+  ['mesa-capacidad'].forEach((id) => {
     $(id).addEventListener('input', () => {
       const limpio = $(id).value.replace(/\D/g, '');
       if ($(id).value !== limpio) $(id).value = limpio;
