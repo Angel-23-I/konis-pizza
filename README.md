@@ -5,6 +5,8 @@ Aplicación web para que los clientes de **Konys Pizza** (Cra. 36 con calle 41, 
 
 Hoy las reservas se toman a mano por llamada, WhatsApp o Instagram, lo que causa reservas dobles, poca visibilidad de la disponibilidad y clientes perdidos fuera del horario de atención. Esta aplicación digitaliza ese proceso.
 
+Video: https://mailudesedu-my.sharepoint.com/:v:/r/personal/01220371056_mail_udes_edu_co/_layouts/15/stream.aspx?id=%2Fpersonal%2F01220371056_mail_udes_edu_co%2FDocuments%2FRecordings%2FNueva%20reuni%C3%B3n-20261109_214207-Grabaci%C3%B3n%20de%20la%20reuni%C3%B3n.mp4&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D&share=cQoBZyL9T15vToCH10nwk1iYEgUCowvDMxBo-4bWBoh8H3lUbA
+
 ## Funcionalidades
 
 **Módulo cliente** (sin registro)
